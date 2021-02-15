@@ -1,0 +1,289 @@
+﻿using System;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Text;
+using System.IO;
+using OfficeOpenXml;
+using System.Data;
+
+
+public partial class Card_Scoring_Browse : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (!IsPostBack)
+        {
+            //txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date.AddDays(-30));
+            //txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+        }
+        if (TrustControl1.getUserRoles() == string.Empty)
+            Response.End();
+        GridView1.Visible = IsPostBack;
+
+        Title = "Card Scoring Browse";
+    }
+
+    //protected void cboPerPage_SelectedIndexChanged(object sender, EventArgs e)
+    //{
+    //    GridView1.PageSize = 20;
+    //}
+    protected void txtFilter_TextChanged(object sender, EventArgs e)
+    {
+
+    }
+    protected void cboBranch_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        
+    }
+    protected void cboSent_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void cboCardType_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    public string[] getExtensionImage(string Extension, string AID, string FileKey)
+    {
+        string Pre = "Images/ext/";
+        string[] RetVal = new string[12];
+        RetVal[(int)FileDetails.Img] = Pre + "attach.gif";
+        RetVal[(int)FileDetails.Width] = "16px";
+        RetVal[(int)FileDetails.CSS] = "noborder";
+        RetVal[(int)FileDetails.LoadImg] = "";
+        RetVal[(int)FileDetails.ACSS] = "";
+        RetVal[(int)FileDetails.Preview] = "";
+        RetVal[(int)FileDetails.View] = "";
+        RetVal[(int)FileDetails.LightBox] = "";
+
+        switch (Extension.ToUpper().Trim())
+        {
+            case "DOC":
+            case "DOCX":
+                RetVal[(int)FileDetails.Img] = Pre + "doc.gif";
+                break;
+            case "XLS":
+            case "XLSX":
+            case "XLSM":
+            case "XLT":
+            case "XLTX":
+                RetVal[(int)FileDetails.Img] = Pre + "xls.gif";
+                break;
+            case "PPT":
+            case "PPTX":
+            case "PPTM":
+            case "POTX":
+            case "POTM":
+            case "PPS":
+            case "PPSX":
+                RetVal[(int)FileDetails.Img] = Pre + "ppt.gif";
+                break;
+            case "ZIP":
+            case "RAR":
+            case "TAR":
+            case "7ZIP":
+                RetVal[(int)FileDetails.Img] = Pre + "zip.gif";
+                break;
+            case "TXT":
+            case "INI":
+            case "BAT":
+                RetVal[(int)FileDetails.Img] = Pre + "txt.gif";
+                RetVal[(int)FileDetails.View] = string.Format("Attachment.ashx?aid={0}&key={1}&view=yes", AID, FileKey);
+                break;
+            case "PDF":
+                //RetVal[0] = Pre + "pdf.gif";
+                //RetVal[1] = "50px";
+                //break;
+                RetVal[(int)FileDetails.Img] = "Images/loading.gif";
+                RetVal[(int)FileDetails.Width] = "80px";
+                RetVal[(int)FileDetails.CSS] = "AttachmentThumb";
+                RetVal[(int)FileDetails.LoadImg] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&W=160&P=1", AID, FileKey);
+                RetVal[(int)FileDetails.ACSS] = "lightbox";
+                RetVal[(int)FileDetails.View] = string.Format("AttachmentCard.ashx?aid={0}&key={1}&view=yes", AID, FileKey);
+                RetVal[(int)FileDetails.Preview] = string.Format("Pdf.aspx?aid={0}&key={1}", AID, FileKey);
+                RetVal[(int)FileDetails.LightBox] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&P=1&Z=1", AID, FileKey);
+                break;
+            case "JPG":
+            case "JPEG":
+            case "GIF":
+            case "PNG":
+            case "BMP":
+                RetVal[(int)FileDetails.Img] = "Images/loading.gif";
+                RetVal[(int)FileDetails.Width] = "80px";
+                RetVal[(int)FileDetails.CSS] = "AttachmentThumb";
+                RetVal[(int)FileDetails.LoadImg] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&W=160&H=200&R=1", AID, FileKey);
+                RetVal[(int)FileDetails.ACSS] = "lightbox";
+                RetVal[(int)FileDetails.View] = string.Format("AttachmentCard.ashx?aid={0}&key={1}&view=yes", AID, FileKey);
+                RetVal[(int)FileDetails.LightBox] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&Z=0&R=1", AID, FileKey);
+                break;
+            default:
+                RetVal[(int)FileDetails.Img] = Pre + "attach.gif";
+                break;
+        }
+        return RetVal;
+    }
+    enum FileDetails
+    {
+        Img, AID, Name, Size, FileKey, LoadImg, Width, CSS, ACSS, Preview, View, LightBox
+    }
+    public string getLinkImage(object AID, object FileKey, object Extension)
+    {
+        string RetVal = "";
+        RetVal = "ShowCardImage.ashx?aid=" + AID.ToString() + "&key=" + FileKey.ToString() + "&w=60&p=1";
+        return RetVal;
+    }
+
+
+    protected void cboOtherAccounts_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
+    //protected void cboBranch_DataBound(object sender, EventArgs e)
+    //{
+    //    foreach (ListItem i in cboBranch.Items)
+
+    //        i.Selected = false;
+
+
+    //    if (Session["BRANCHID"].ToString() != "1")
+    //    {
+    //        foreach (ListItem ii in cboBranch.Items)
+    //        {
+    //            if (ii.Value == Session["BRANCHID"].ToString())
+    //                ii.Selected = true;
+    //            else
+    //                ii.Enabled = false;
+    //        }
+    //    }
+
+    //}
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblStatus.Text = string.Format("Total Rows: <b>{0:N0}</b>", e.AffectedRows);
+        //cmdExport.Visible = e.AffectedRows > 0;
+    }
+    protected void cmdExport_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            string FileName = Path.GetTempFileName();
+            if (File.Exists(FileName)) File.Delete(FileName);
+            FileInfo FI = new FileInfo(FileName);
+            using (ExcelPackage xlPackage = new ExcelPackage(FI))
+            {
+                ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("Card Search");
+                int StartRow = 1;
+
+                //Adding Title Row
+                worksheet.Cells[StartRow, 1].Value = "Name";
+                worksheet.Cells[StartRow, 2].Value = "A/C No.";
+                worksheet.Cells[StartRow, 3].Value = "DOB";
+                worksheet.Cells[StartRow, 4].Value = "Sex";
+                worksheet.Cells[StartRow, 5].Value = "Cell Phone";
+                worksheet.Cells[StartRow, 6].Value = "Phone";
+                worksheet.Cells[StartRow, 7].Value = "Email";
+                worksheet.Cells[StartRow, 8].Value = "Card Type";
+                worksheet.Cells[StartRow, 9].Value = "Card No.";
+                worksheet.Cells[StartRow, 10].Value = "Insert DT";
+                worksheet.Cells[StartRow, 11].Value = "Insert By";                
+
+
+                worksheet.Column(1).Width = 30;
+                worksheet.Column(2).Width = 20;
+                worksheet.Column(3).Width = 15;
+                worksheet.Column(4).Width = 7;
+                worksheet.Column(5).Width = 15;
+                worksheet.Column(6).Width = 20;
+                worksheet.Column(7).Width = 15;
+                worksheet.Column(8).Width = 25;
+                worksheet.Column(9).Width = 20;
+                worksheet.Column(10).Width = 20;
+                worksheet.Column(11).Width = 15;
+
+                DataView DV = (DataView)SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+                for (int r = 0; r < DV.Table.Rows.Count; r++)
+                {
+                    int R = StartRow + r + 1;
+                    //worksheet.Cells[R, 1].Value = r + 1;
+
+                    if (DV.Table.Rows[r]["NameOnCard"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 1].Value = DV.Table.Rows[r]["NameOnCard"].ToString();
+                    }
+
+                    if (DV.Table.Rows[r]["Account"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 2].Value = DV.Table.Rows[r]["Account"];
+                    }
+
+                    if (DV.Table.Rows[r]["DOB"] != DBNull.Value) { 
+                    worksheet.Cells[R, 3].Value = DV.Table.Rows[r]["DOB"];
+                    worksheet.Cells[R, 3].Style.Numberformat.Format = "MM/dd/yyyy";
+                }
+
+                    if (DV.Table.Rows[r]["SEX"] != DBNull.Value)
+                        worksheet.Cells[R, 4].Value = DV.Table.Rows[r]["SEX"];
+
+                    if (DV.Table.Rows[r]["Cellphone"] != DBNull.Value)
+                        worksheet.Cells[R, 5].Value = DV.Table.Rows[r]["Cellphone"];
+
+                    if (DV.Table.Rows[r]["Phone"] != DBNull.Value)
+                        worksheet.Cells[R, 6].Value = DV.Table.Rows[r]["Phone"];
+
+                    if (DV.Table.Rows[r]["Email"] != DBNull.Value)
+                        worksheet.Cells[R, 7].Value = DV.Table.Rows[r]["Email"].ToString();
+
+                    if (DV.Table.Rows[r]["CardTypeName"] != DBNull.Value)
+                        worksheet.Cells[R, 8].Value = DV.Table.Rows[r]["CardTypeName"].ToString();
+
+                    if (DV.Table.Rows[r]["CardNumber"] != DBNull.Value)
+                        worksheet.Cells[R, 9].Value = DV.Table.Rows[r]["CardNumber"].ToString();
+
+                    if (DV.Table.Rows[r]["InsertDT"] != DBNull.Value) { 
+                        worksheet.Cells[R, 10].Value = DV.Table.Rows[r]["InsertDT"];
+                        worksheet.Cells[R, 10].Style.Numberformat.Format = "MM/dd/yyyy";
+                    }
+
+                    if (DV.Table.Rows[r]["InsertBy"] != DBNull.Value)
+                        worksheet.Cells[R, 11].Value = DV.Table.Rows[r]["InsertBy"].ToString();
+                }
+
+                worksheet.Cells["A1:K1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                worksheet.Cells["A1:K1"].Style.Font.Bold = true;
+
+
+
+                //Adding Properties
+                xlPackage.Workbook.Properties.Title = "Card";
+                xlPackage.Workbook.Properties.Author = string.Format("{0}", Session["EMPNAME"]);
+                xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                xlPackage.Save();
+            }
+
+
+            //Reading File Content
+            byte[] content = File.ReadAllBytes(FileName);
+            File.Delete(FileName);
+
+            //Downloading File
+            Response.Clear();
+            Response.ClearContent();
+            Response.ClearHeaders();
+            Response.ContentType = "application/xlsx";
+            Response.AddHeader("Content-Disposition", "attachment;filename=" +
+                "Card_Search.xlsx"
+                );
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.BinaryWrite(content);
+            Response.End();
+        }
+        catch (Exception ex)
+        {
+            lblStatus.Text = ex.Message;
+        }
+    }
+}

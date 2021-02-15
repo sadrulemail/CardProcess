@@ -1,0 +1,117 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data.SqlClient;
+using System.Configuration;
+
+public partial class ATM_Cashload_Batch : System.Web.UI.Page
+{
+    bool Done = false;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+
+        lblTitle.Text = this.Title = string.Format("ATM Batch: {0}", Request.QueryString["batchid"]);
+        txtSearch.Focus();
+    }
+
+    protected void SqlDataSource1_Selected(object sender, System.Web.UI.WebControls.SqlDataSourceStatusEventArgs e)
+    {
+        //lblStatus.Text = string.Format("Total Rows: <b>{0:N0}</b>", e.AffectedRows);
+    }
+
+    protected void SqlDataSource1_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        Done = (bool)e.Command.Parameters["@Done"].Value;
+        TrustControl1.ClientMsg(e.Command.Parameters["@Msg"].Value.ToString());
+        DetailsView1.DataBind();
+        GridViewAtmValue.DataBind();
+    }
+    protected void GridViewAtmValue_RowUpdated(object sender, GridViewUpdatedEventArgs e)
+    {
+        if (!Done)
+            e.KeepInEditMode = true;
+    }
+    protected void cmdInstruction_Click(object sender, EventArgs e)
+    {
+        string Msg = "";
+
+        using (SqlConnection conn = new SqlConnection())
+        {
+            string Query = "s_Atm_Instruct_to_All_Branches";
+            conn.ConnectionString = ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+
+            using (SqlCommand cmd = new SqlCommand())
+            {
+                cmd.CommandText = Query;
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                cmd.Parameters.Add("@BatchID", System.Data.SqlDbType.Int).Value = string.Format("{0}", Request.QueryString["batchid"]);
+                cmd.Parameters.Add("@InstructBy", System.Data.SqlDbType.VarChar).Value = Session["EMPID"].ToString();
+                cmd.Parameters.Add("@Comment", System.Data.SqlDbType.VarChar).Value = txtInstructionComment.Text.Trim();
+
+                SqlParameter Sql_Msg = new SqlParameter("@Msg", System.Data.SqlDbType.VarChar, 255);
+                Sql_Msg.Direction = System.Data.ParameterDirection.InputOutput;
+                Sql_Msg.Value = Msg;
+                cmd.Parameters.Add(Sql_Msg);
+
+                cmd.Connection = conn;
+                conn.Open();
+
+                cmd.ExecuteNonQuery();
+                Msg = string.Format("{0}", Sql_Msg.Value);
+            }         
+        }
+
+        GridViewAtmValue.DataBind();
+
+        TrustControl1.ClientMsg(Msg);
+    }
+    protected void GridViewAtmValue_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        if (e.CommandName == "Instruct")
+        {
+            string Msg = "";
+            string AtmID = e.CommandArgument.ToString();
+
+
+            using (SqlConnection conn = new SqlConnection())
+            {
+                string Query = "s_Atm_Instruction_to_Branch";
+                conn.ConnectionString = ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.CommandText = Query;
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                    cmd.Parameters.Add("@BatchID", System.Data.SqlDbType.Int).Value = string.Format("{0}", Request.QueryString["batchid"]);
+                    cmd.Parameters.Add("@InstructBy", System.Data.SqlDbType.VarChar).Value = Session["EMPID"].ToString();
+                    cmd.Parameters.Add("@Comment", System.Data.SqlDbType.VarChar).Value = txtInstructionComment.Text.Trim();
+                    cmd.Parameters.Add("@AtmID", System.Data.SqlDbType.VarChar).Value = AtmID.Trim();
+
+                    SqlParameter Sql_Msg = new SqlParameter("@Msg", System.Data.SqlDbType.VarChar, 255);
+                    Sql_Msg.Direction = System.Data.ParameterDirection.InputOutput;
+                    Sql_Msg.Value = Msg;
+                    cmd.Parameters.Add(Sql_Msg);
+
+                    cmd.Connection = conn;
+                    conn.Open();
+
+                    cmd.ExecuteNonQuery();
+                    Msg = string.Format("{0}", Sql_Msg.Value);
+                }
+            }
+
+            GridViewAtmValue.DataBind();
+
+            TrustControl1.ClientMsg(Msg);
+        }
+    }
+
+    
+
+    
+}

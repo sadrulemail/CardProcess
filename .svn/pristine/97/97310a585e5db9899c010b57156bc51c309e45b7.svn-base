@@ -1,0 +1,501 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="Reissue_Export.aspx.cs" Inherits="Reissue_Export" %>
+
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc2" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    Card Reissue Data Export
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <asp:HiddenField ID="hidCardType" runat="server" />
+            <asp:HiddenField ID="hidRequestType" runat="server" />
+            <asp:SqlDataSource ID="SqlDataSource3" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="sp_Cards_Ready_To_Reissue" SelectCommandType="StoredProcedure">
+            </asp:SqlDataSource>
+            <asp:SqlDataSource ID="SqlDataSourceCardType" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="SELECT [CardTypeCode], [CardType] FROM [CardTypes] ORDER BY [CardType]">
+            </asp:SqlDataSource>
+            <asp:TabContainer runat="server" ID="tabContainer" CssClass="NewsTab" OnDemand="true"
+                ActiveTabIndex="0" Width="100%" OnActiveTabChanged="tabContainer_ActiveTabChanged">
+                <asp:TabPanel runat="server" ID="tab1">
+                    <HeaderTemplate>
+                        Ready to Reissue</HeaderTemplate>
+                    <ContentTemplate>
+                        <asp:GridView ID="GridView2" runat="server" AllowSorting="True" AutoGenerateColumns="False"
+                            BackColor="White" BorderColor="#6B696B" BorderStyle="Solid" BorderWidth="5px"
+                            CellPadding="3" DataSourceID="SqlDataSource3" ForeColor="Black" CssClass="Grid"
+                            GridLines="Vertical" Style="font-size: small" Width="600px" OnDataBound="GridView2_DataBound"
+                            ShowFooter="True">
+                            <Columns>
+                                <asp:TemplateField HeaderText="Type Code" SortExpression="CardTypeCode">
+                                    <ItemTemplate>
+                                        <a href='ShowCardsReissue.aspx?cardtype=<%# Eval("CardTypeNew") %>' target="_blank"
+                                            class="Link"><span style="color: blue">
+                                                <%# Eval("CardTypeNew")%></span></a>
+                                    </ItemTemplate>
+                                </asp:TemplateField>
+                                <%--  <asp:BoundField DataField="CardTypeCode" HeaderText="Type Code" SortExpression="CardTypeCode">
+                                    <ItemStyle HorizontalAlign="Center" />--%>
+                                <%-- </asp:BoundField>--%>
+                                <asp:BoundField DataField="CardType" HeaderText="Card Type" SortExpression="CardType" />
+                                <asp:BoundField DataField="AutoReady to Send" HeaderText="AutoReady to Send" SortExpression="AutoReady to Send">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="BranchRequestReady to Send" HeaderText="BranchRequestReady to Send"
+                                    SortExpression="BranchRequestReady to Send">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <%-- <asp:TemplateField HeaderText="%" SortExpression="Ready To Send">
+                                    <ItemTemplate>
+                                    </ItemTemplate>
+                                    <ItemStyle Width="100px" />
+                                </asp:TemplateField>--%>
+                            </Columns>
+                            <EmptyDataTemplate>
+                                <div style="padding: 10px">
+                                    No Data Found to Reissue Cards.</div>
+                            </EmptyDataTemplate>
+                            <AlternatingRowStyle BackColor="White" />
+                            <FooterStyle BackColor="#4DB849" Font-Bold="True" HorizontalAlign="Center" Font-Size="XX-Large" />
+                            <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                            <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Right" />
+                            <RowStyle BackColor="#F7F7DE" />
+                            <SelectedRowStyle BackColor="#CE5D5A" Font-Bold="True" ForeColor="White" />
+                        </asp:GridView>
+                    </ContentTemplate>
+                </asp:TabPanel>
+                <asp:TabPanel runat="server" ID="tab2">
+                    <HeaderTemplate>
+                        Export History</HeaderTemplate>
+                    <ContentTemplate>
+                        <div class="group">
+                            <h4>
+                                Export History
+                                <div style="float: right">
+                                    <asp:DropDownList ID="cmdExportLogPerPage" runat="server" OnSelectedIndexChanged="cmdExportLogPerPage_SelectedIndexChanged"
+                                        AutoPostBack="True">
+                                        <asp:ListItem>10</asp:ListItem>
+                                        <asp:ListItem>20</asp:ListItem>
+                                        <asp:ListItem>25</asp:ListItem>
+                                        <asp:ListItem>30</asp:ListItem>
+                                        <asp:ListItem>50</asp:ListItem>
+                                        <asp:ListItem>100</asp:ListItem>
+                                        <asp:ListItem>200</asp:ListItem>
+                                        <asp:ListItem>250</asp:ListItem>
+                                        <asp:ListItem>500</asp:ListItem>
+                                        <asp:ListItem>1000</asp:ListItem>
+                                    </asp:DropDownList>
+                                </div>
+                            </h4>
+                            <asp:GridView ID="GridView1" runat="server" AllowPaging="True" CssClass="Grid" AllowSorting="True"
+                                AutoGenerateColumns="False" BackColor="White" BorderColor="#478ACA" BorderStyle="Solid"
+                                BorderWidth="1px" CellPadding="5" DataKeyNames="SL" DataSourceID="SqlDataSource2"
+                                Style="font-size: small">
+                                <RowStyle BackColor="#E7E7FF" ForeColor="#4A3C8C" BorderColor="#478ACA" BorderStyle="Dotted"
+                                    BorderWidth="1px" VerticalAlign="Top" />
+                                <PagerSettings Mode="NumericFirstLast" PageButtonCount="20" Position="TopAndBottom" />
+                                <PagerStyle BackColor="#478ACA" ForeColor="Black" HorizontalAlign="Left" CssClass="PagerStyle" />
+                                <HeaderStyle BackColor="#4A3C8C" Font-Bold="True" ForeColor="White" />
+                                <AlternatingRowStyle BackColor="#F7F7F7" BorderStyle="Solid" BorderWidth="1px" BorderColor="#478ACA" />
+                                <Columns>
+                                    <asp:BoundField DataField="SL" HeaderText="Batch" InsertVisible="False" ReadOnly="True"
+                                        SortExpression="SL">
+                                        <ItemStyle HorizontalAlign="Center"></ItemStyle>
+                                    </asp:BoundField>
+                                    <asp:TemplateField HeaderText="Issued On" SortExpression="SendDT">
+                                        <ItemTemplate>
+                                            <span title='<%# Eval("SendDT","{0:dddd, \ndd MMMM yyyy, \nhh:mm:ss tt}") %>'>
+                                                <%# TrustControl1.ToRecentDateTime(Eval("SendDT"))%></span>
+                                        </ItemTemplate>
+                                        <ItemStyle Wrap="false" HorizontalAlign="Center" />
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="About" SortExpression="SendDT">
+                                        <ItemTemplate>
+                                            <%# TrustControl1.ToRelativeDate(Eval("SendDT")) %>
+                                        </ItemTemplate>
+                                        <ItemStyle HorizontalAlign="Center" Wrap="False" />
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Issued By" SortExpression="SendBy">
+                                        <ItemTemplate>
+                                            <uc2:EMP ID="EMP1" runat="server" Username='<%# Eval("SendBy") %>' />
+                                        </ItemTemplate>
+                                        <ItemStyle HorizontalAlign="Center" />
+                                    </asp:TemplateField>
+                                    <asp:BoundField DataField="CardType" HeaderText="Card Type" SortExpression="CardType">
+                                        <ItemStyle HorizontalAlign="Center"></ItemStyle>
+                                    </asp:BoundField>
+                                    <asp:BoundField DataField="RequestType" HeaderText="Request Type" SortExpression="RequestType">
+                                        <ItemStyle HorizontalAlign="Center"></ItemStyle>
+                                    </asp:BoundField>
+                                    <asp:BoundField DataField="Total" HeaderText="Total" SortExpression="Total">
+                                        <ItemStyle HorizontalAlign="Center"></ItemStyle>
+                                    </asp:BoundField>
+                                    <asp:TemplateField HeaderText="Branches" SortExpression="Branches">
+                                        <ItemTemplate>
+                                            <%# Eval("Branches") %>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Download">
+                                        <ItemTemplate>
+                                            <a href='<%# "Card_Reissue_Batch.aspx?batch=" + Eval("SL") + "&type=dbf&RequestType=" + Eval("RequestType") + "&branches=" + (Eval("Branches")).ToString().Replace(" ", "") %>'
+                                                class="Link">DBF</a>| <a target="_blank" href='<%# "Card_Reissue_Batch.aspx?batch=" + Eval("SL") + "&type=view&RequestType=" + Eval("RequestType") + "&branches=" + (Eval("Branches")).ToString().Replace(" ", "") %>'
+                                                    class="Link">View</a>| <a target="_blank" href='<%# "Card_Reissue_Batch.aspx?batch=" + Eval("SL") + "&type=xlsx&RequestType=" + Eval("RequestType") + "&branches=" + (Eval("Branches")).ToString().Replace(" ", "") %>'
+                                                        class="Link">XLSX</a>
+                                        </ItemTemplate>
+                                        <ItemStyle Wrap="False" />
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Download (State Change)">
+                                        <ItemTemplate>
+                                            <a target="_blank" href='<%# "Card_Reissue_Batch.aspx?batch=" + Eval("SL") + "&type=dbf1&RequestType=" + Eval("RequestType") + "&branches=" + (Eval("Branches")).ToString().Replace(" ", "") %>'
+                                                class="Link">DBF</a>
+                                            <%--| <a target="_blank" href='<%# "Card_Reissue_Batch.aspx?batch=" + Eval("SL") + "&type=view&branches=" + (Eval("Branches")).ToString().Replace(" ", "") %>'
+                                                    class="Link">View</a>|
+                                                     <a target="_blank" href='<%# "Card_Reissue_Batch.aspx?batch=" + Eval("SL") + "&type=xlsx&branches=" + (Eval("Branches")).ToString().Replace(" ", "") %>'
+                                                        class="Link">XLSX</a>--%>
+                                        </ItemTemplate>
+                                        <ItemStyle Wrap="False" HorizontalAlign="Center" />
+                                    </asp:TemplateField>
+                                    <asp:TemplateField HeaderText="Forwarding Letter" Visible="False">
+                                        <ItemTemplate>
+                                            <a target="_blank" href='<%# "Forwarding.aspx?temp=&date=&batch=" + Eval("SL") %>'
+                                                class="Link">Batch</a>&nbsp;&nbsp; <a target="_blank" href='<%# "Forwarding.aspx?temp=&batch=&date=" + Eval("SendDT","{0:dd/MM/yyyy}") %>'
+                                                    class="Link">Date</a></ItemTemplate>
+                                        <ItemStyle HorizontalAlign="Center" />
+                                    </asp:TemplateField>
+                                </Columns>
+                            </asp:GridView>
+                            <asp:SqlDataSource ID="SqlDataSource2" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                                SelectCommand="SELECT * FROM CardReissueSentLog order by SL Desc"></asp:SqlDataSource>
+                        </div>
+                    </ContentTemplate>
+                </asp:TabPanel>
+                <asp:TabPanel runat="server" ID="tab3">
+                    <HeaderTemplate>
+                        New Reissue</HeaderTemplate>
+                    <ContentTemplate>
+                        <asp:SqlDataSource ID="SqlDataSourceExport" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                            SelectCommand="sp_Card_Reissue_Export" SelectCommandType="StoredProcedure" OnSelected="SqlDataSourceExport_Selected">
+                            <SelectParameters>
+                                <asp:SessionParameter SessionField="EMPID" Name="EmpID" Type="String" />
+                                <asp:ControlParameter Name="CardType" ControlID="hidCardType" PropertyName="Value" />
+                                <asp:ControlParameter Name="RequestType" ControlID="hidRequestType" PropertyName="Value" />
+                                <asp:ControlParameter Name="MaxRowsToSent" ControlID="cboMaxRowsToSent" PropertyName="SelectedValue" />
+                                <asp:ControlParameter ControlID="lblSelectedBrances" Name="BranchCodes" PropertyName="Text"
+                                    Size="4000" DefaultValue="                                                                         " />
+                                <asp:Parameter Name="BatchNo" Type="Int32" DefaultValue="0" Direction="InputOutput" />
+                            </SelectParameters>
+                        </asp:SqlDataSource>
+                        <table cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                                <td colspan="2">
+                                    <div style="border: solid 5px #4DB849; width: 600px; padding: 10px; background-color: #F6F8FC;">
+                                        <table>
+                                            <tr>
+                                                <td class="SmallFont" style="text-align: right;" nowrap="nowrap">
+                                                    Card Type:
+                                                </td>
+                                                <td style="margin-left: 40px">
+                                                    &nbsp;&nbsp;
+                                                </td>
+                                                <td style="margin-left: 40px">
+                                                    <asp:DropDownList ID="cboCardType" runat="server" AppendDataBoundItems="True" AutoPostBack="True"
+                                                        DataSourceID="SqlDataSource3" DataTextField="CardType" DataValueField="CardTypeNew"
+                                                        OnSelectedIndexChanged="cboCardType_SelectedIndexChanged">
+                                                        <asp:ListItem></asp:ListItem>
+                                                    </asp:DropDownList>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="SmallFont" nowrap="nowrap" style="text-align: right;">
+                                                    Request Type:
+                                                </td>
+                                                <td style="margin-left: 40px">
+                                                    &nbsp;&nbsp;
+                                                </td>
+                                                <td style="margin-left: 40px">
+                                                    <asp:DropDownList ID="ddlRequestType" runat="server" OnSelectedIndexChanged="ddlRequestType_SelectedIndexChanged"
+                                                        AppendDataBoundItems="True" AutoPostBack="True">
+                                                        <asp:ListItem></asp:ListItem>
+                                                        <asp:ListItem Text="Auto" Value="Auto"></asp:ListItem>
+                                                        <asp:ListItem Text="Branch Request" Value="Branch Request"></asp:ListItem>
+                                                    </asp:DropDownList>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="SmallFont" nowrap="nowrap" style="text-align: right;">
+                                                    Total Export:
+                                                </td>
+                                                <td style="margin-left: 40px">
+                                                    &nbsp;&nbsp;
+                                                </td>
+                                                <td style="margin-left: 40px">
+                                                    <asp:DropDownList ID="cboMaxRowsToSent" runat="server" AutoPostBack="True" OnSelectedIndexChanged="cboMaxRowsToSent_SelectedIndexChanged">
+                                                        <asp:ListItem></asp:ListItem>
+                                                        <asp:ListItem Text="50" Value="50"></asp:ListItem>
+                                                        <asp:ListItem Text="100" Value="100"></asp:ListItem>
+                                                        <asp:ListItem Text="150" Value="150"></asp:ListItem>
+                                                        <asp:ListItem Text="200" Value="200"></asp:ListItem>
+                                                        <asp:ListItem Text="250" Value="250"></asp:ListItem>
+                                                        <asp:ListItem Text="300" Value="300"></asp:ListItem>
+                                                        <asp:ListItem Text="350" Value="350"></asp:ListItem>
+                                                        <asp:ListItem Text="400" Value="400"></asp:ListItem>
+                                                        <asp:ListItem Text="500" Value="500"></asp:ListItem>
+                                                        <asp:ListItem Text="600" Value="600"></asp:ListItem>
+                                                        <asp:ListItem Text="700" Value="700"></asp:ListItem>
+                                                        <asp:ListItem Text="800" Value="800"></asp:ListItem>
+                                                        <asp:ListItem Text="900" Value="900"></asp:ListItem>
+                                                        <asp:ListItem Text="1000" Value="1000"></asp:ListItem>
+                                                    </asp:DropDownList>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="SmallFont">
+                                                </td>
+                                                <td style="text-align: right;">
+                                                    &nbsp;&nbsp;
+                                                </td>
+                                                <td style="text-align: left;">
+                                                    <asp:Button ID="cmdExport" runat="server" Enabled="False" OnClick="cmdExport_Click"
+                                                        Text="Reissue New Cards" Width="150px" /><asp:ConfirmButtonExtender ID="cmdExport_ConfirmButtonExtender"
+                                                            runat="server" ConfirmText="Do you want to Reissue?" Enabled="True" TargetControlID="cmdExport">
+                                                        </asp:ConfirmButtonExtender>
+                                                    <asp:Label ID="lblDownloadLink" runat="server" Style="font-weight: 700"></asp:Label>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="SmallFont" style="text-align: right;">
+                                                    Ready to Export:
+                                                </td>
+                                                <td class="SmallFont" style="margin-left: 40px">
+                                                    &nbsp;&nbsp;
+                                                </td>
+                                                <td class="SmallFont" style="margin-left: 40px">
+                                                    <asp:Label ID="lblTotalUnsent" runat="server" Font-Bold="True" Text="0"></asp:Label>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="SmallFont" style="text-align: right;">
+                                                    Card Type:
+                                                </td>
+                                                <td style="margin-left: 40px" class="SmallFont">
+                                                    &nbsp;&nbsp;
+                                                </td>
+                                                <td class="SmallFont" style="margin-left: 40px">
+                                                    <asp:Label ID="lblCardType" runat="server" Font-Bold="True" Text="0"></asp:Label>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="SmallFont" style="text-align: right; padding-left: 10px" nowrap="nowrap"
+                                                    valign="top">
+                                                     Branches:
+                                                </td>
+                                                <td style="margin-left: 40px" class="SmallFont">
+                                                    &nbsp;&nbsp;
+                                                </td>
+                                                <td class="SmallFont" style="margin-left: 40px">
+                                                    <asp:Label ID="lblSelectedBrances" runat="server" Font-Bold="True"></asp:Label>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    &nbsp;&nbsp;
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td colspan="2" style="background-color: #4DB849; padding: 10px">
+                                    <b><asp:Label ID="lblMsgType" runat="server" Text=""></asp:Label></b> <span style="padding-left: 20px; float: right">
+                                        <asp:CheckBox ID="chkSelectAllBranch" Text="Select All" CssClass="SmallFont" ForeColor="White"
+                                            runat="server" AutoPostBack="True" OnCheckedChanged="chkSelectAllBranch_CheckedChanged"
+                                            Enabled="False" />
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="" valign="top" colspan="2">
+                                    <table style="border-collapse: collapse" cellpadding="0" cellspacing="0" width="100%">
+                                        <tr>
+                                            <td valign="top" align="right">
+                                                <div style="height: 350px; overflow: auto; border-left: solid 5px #4DB849; border-bottom: solid 5px #4DB849;
+                                                    border-right: solid 5px #4DB849; background-color: #FAFAD2">
+                                                    <asp:CheckBoxList ID="chkBranches" runat="server" Width="300px" DataTextField="BranchName"
+                                                        DataValueField="BranchID" Style="font-size: small" BorderColor="#FFCC66" BorderStyle="None"
+                                                        BorderWidth="0px" AutoPostBack="True" OnSelectedIndexChanged="chkBranches_SelectedIndexChanged">
+                                                    </asp:CheckBoxList>
+                                                    <asp:GridView ID="GridView3" runat="server" AllowSorting="True" AutoGenerateColumns="False"
+                                                        BackColor="LightGoldenrodYellow" BorderWidth="0px" CellPadding="3" DataSourceID="SqlDataSource4"
+                                                        ForeColor="Black" GridLines="None" Style="font-size: small" CssClass="Grid" OnRowCommand="GridView3_RowCommand"
+                                                        OnDataBound="GridView3_DataBound">
+                                                        <Columns>
+                                                            <asp:TemplateField SortExpression="BranchID" HeaderText="" ItemStyle-Wrap="false">
+                                                                <ItemTemplate>
+                                                                    <asp:CheckBox ID="chkBranchSelect" runat="server" Text='<%# Eval("BranchID") %>'
+                                                                        AutoPostBack="true" OnCheckedChanged="chkBranchSelect_CheckedChanged1" EnableTheming="true" />
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+                                                            <asp:TemplateField HeaderText="Branch Name" SortExpression="BranchName">
+                                                                <ItemTemplate>
+                                                                    <a class="Link" target="_blank" href='ShowCardsReissue.aspx?cardtype=<%# hidCardType.Value %>&branch=<%# Eval("BranchID") %>'>
+                                                                        <span style="color: blue">
+                                                                            <%# Eval("BranchName") %></span></a>
+                                                                </ItemTemplate>
+                                                            </asp:TemplateField>
+                                                            <asp:BoundField DataField="ReadyToSend" HeaderText="Ready" SortExpression="ReadyToSend">
+                                                                <ItemStyle HorizontalAlign="Center" />
+                                                            </asp:BoundField>
+                                                        </Columns>
+                                                        <AlternatingRowStyle BackColor="PaleGoldenrod" />
+                                                        <EmptyDataTemplate>
+                                                            <div style="padding: 20px 100px">
+                                                                No Data Found.</div>
+                                                        </EmptyDataTemplate>
+                                                        <HeaderStyle BackColor="Tan" ForeColor="White" />
+                                                        <RowStyle BackColor="White" />
+                                                        <SelectedRowStyle BackColor="DarkSlateBlue" ForeColor="GhostWhite" />
+                                                    </asp:GridView>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </ContentTemplate>
+                </asp:TabPanel>
+                <asp:TabPanel runat="server" ID="tab4">
+                    <HeaderTemplate>
+                        Delete</HeaderTemplate>
+                    <ContentTemplate>
+                        <table class="Panel1 ui-corner-all">
+                            <tr>
+                                <td>
+                                    <b>Account No: </b>
+                                </td>
+                                <td>
+                                    <asp:TextBox ID="txtAccountNo" runat="server" MaxLength="15" Width="170px" CssClass="Center"
+                                        Font-Size="Large"></asp:TextBox>
+                                </td>
+                                <td>
+                                    <asp:Button ID="cmdOpen" runat="server" Text="Search" Width="80px" OnClick="cmdOpen_Click" />
+                                </td>
+                            </tr>
+                        </table>
+                        <br />
+                        <asp:GridView ID="GridView4" runat="server" AutoGenerateColumns="False" BackColor="White"
+                            BorderColor="#DEDFDE" BorderStyle="None" BorderWidth="1px" CellPadding="4" DataKeyNames="ID"
+                            DataSourceID="SqlDataSourceSearch" ForeColor="Black" GridLines="Vertical"
+                            CssClass="Grid">
+                            <Columns>
+                                <asp:BoundField DataField="ITCLID" HeaderText="ITCLID" SortExpression="ITCLID" />
+                                <asp:BoundField DataField="Account" HeaderText="Account" ReadOnly="True" SortExpression="Account">
+                                    <ItemStyle Wrap="False" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="NameOnCard" HeaderText="Name On Card" SortExpression="NameOnCard" />
+                                <asp:BoundField DataField="CardNumber" HeaderText="Card Number" ReadOnly="True" SortExpression="CardNumber" />
+                                <asp:BoundField DataField="Status" HeaderText="Status" SortExpression="Status" />
+                                <asp:BoundField DataField="SendBatchID" HeaderText="Send Batch ID" SortExpression="SendBatchID">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="CardType" HeaderText="Card Type" SortExpression="CardType" />
+                                <asp:BoundField DataField="CardTypeCode" HeaderText="Type Code" ReadOnly="True" SortExpression="CardTypeCode">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="ReasonDescription" HeaderText="Reason" SortExpression="ReasonDescription" />
+                                <asp:BoundField DataField="RequestType" HeaderText="Request Type" SortExpression="RequestType" />
+                                <asp:TemplateField>
+                                    <ItemTemplate>
+                                        <asp:Button runat="server" ID="cmdDelete" CommandName="Delete" Text="Delete" CommandArgument='<%# Eval("ID") %>'
+                                            Visible='<%# (Eval("Deleted").ToString() == "True" ? false : true) %>' />
+                                        <asp:ConfirmButtonExtender runat="server" ID="ConfirmButtonExtenderDelete" TargetControlID="cmdDelete"
+                                            ConfirmText="Do you want to Delete?">
+                                        </asp:ConfirmButtonExtender>
+                                    </ItemTemplate>
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:TemplateField>
+                            </Columns>
+                            <AlternatingRowStyle BackColor="White" />
+                            <FooterStyle BackColor="#CCCC99" />
+                            <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                            <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Right" />
+                            <RowStyle BackColor="#F7F7DE" VerticalAlign="Top" />
+                            <SelectedRowStyle BackColor="#CE5D5A" Font-Bold="True" ForeColor="White" />
+                        </asp:GridView>
+                        <asp:SqlDataSource ID="SqlDataSourceSearch" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                            SelectCommand="sp_CardReissue_Search" SelectCommandType="StoredProcedure" 
+                            DeleteCommand="sp_CardReissue_Delete"
+                            DeleteCommandType="StoredProcedure" OnDeleted="SqlDataSourceSearch_Deleted">
+                            <SelectParameters>
+                                <asp:ControlParameter ControlID="txtAccountNo" Name="Filter" PropertyName="Text" />
+                            </SelectParameters>
+                            <DeleteParameters>
+                                <asp:Parameter Name="ID" Type="Int64" />
+                                <asp:SessionParameter Name="EMPID" Type="String" SessionField="EMPID" />
+                            </DeleteParameters>
+                        </asp:SqlDataSource>
+                    </ContentTemplate>
+                </asp:TabPanel>
+                <asp:TabPanel runat="server" ID="tabDeleteAll">
+                    <HeaderTemplate>
+                        Delete All</HeaderTemplate>
+                    <ContentTemplate>
+                        <div style="padding: 50px">
+                            <table>
+                                <tr>
+                                    <td class="SmallFont" nowrap="nowrap" style="text-align: right; font-weight: bold">
+                                        Request Type:
+                                    </td>
+                                    <td style="margin-left: 40px">
+                                        &nbsp;&nbsp;
+                                    </td>
+                                    <td style="margin-left: 40px">
+                                        <asp:DropDownList ID="DropDownList1" runat="server" AppendDataBoundItems="True" AutoPostBack="True">
+                                            <asp:ListItem></asp:ListItem>
+                                            <asp:ListItem Text="Auto" Value="Auto"></asp:ListItem>
+                                        </asp:DropDownList>
+                                    </td>
+                                </tr>
+                            </table>
+                            <asp:Button runat="server" ID="cmdReissue_DeleteAll" Text="Delete All" Width="100px"
+                                Height="40px" OnClick="cmdReissue_DeleteAll_Click" />
+                            <asp:ConfirmButtonExtender runat="server" ID="ConfirmButtonExtenderDeleteAll" TargetControlID="cmdReissue_DeleteAll"
+                                ConfirmText="Do you want to Delete All Reissue Requests?" Enabled="True">
+                            </asp:ConfirmButtonExtender>
+                        </div>
+                    </ContentTemplate>
+                </asp:TabPanel>
+            </asp:TabContainer>
+            <br />
+            <br />
+            <br />
+            <asp:SqlDataSource ID="SqlDataSource4" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="sp_Branch_wise_Card_Reissue_Ready_To_Export" SelectCommandType="StoredProcedure"
+                OnSelected="SqlDataSource4_Selected">
+                <SelectParameters>
+                    <asp:ControlParameter Name="CardType" ControlID="hidCardType" PropertyName="Value" />
+                    <asp:ControlParameter Name="RequestType" ControlID="hidRequestType" PropertyName="Value" />
+                </SelectParameters>
+            </asp:SqlDataSource>
+        </ContentTemplate>
+    </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false" 
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif" 
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

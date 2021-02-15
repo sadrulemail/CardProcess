@@ -1,0 +1,200 @@
+﻿using System;
+using System.IO;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Data.SqlClient;
+using OfficeOpenXml;
+
+
+public partial class SMS_Upload : System.Web.UI.Page
+{
+    string UploadTempFile;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Page.Form.Attributes.Add("enctype", "multipart/form-data");
+
+        TrustControl1.getUserRoles();
+
+        //if (!TrustControl1.isRole("ADMIN"))
+        //{
+        //    if (Session["DEPTID"].ToString() != "7")    //Not IT & Cards
+        //    {
+        //        Response.Write("No Permission.<br><br><a href=''>Home</a>");
+        //        Response.End();
+        //    }
+        //}
+        if (!Directory.Exists(Server.MapPath("Upload")))
+        {
+            Directory.CreateDirectory(Server.MapPath("Upload"));
+        }
+        UploadTempFile = Server.MapPath("Upload/" + Session["EMPID"].ToString() + "_Forwarding2.txt");
+
+        if (!IsPostBack)
+        {
+            Panel2.Visible = false;
+            RunNonQuery("exec sp_Delete_Temp_Msg '" + Session.SessionID + "'", "CardDataConnectionString", CommandType.Text);
+            txtStartDT.Text = string.Format("{0:dd/MM/yyyy h:mm tt}", DateTime.Now).ToLower();
+        }
+        Session["SESSIONID"] = Session.SessionID;
+
+        Title = "Bulk SMS Send";
+    }
+    protected void FileUpload1_UploadedComplete(object sender, AjaxControlToolkit.AsyncFileUploadEventArgs e)
+    {
+        Session["FILENAME"] = FileUpload1.FileName.Trim();
+        //lblUploadStatus.Text = "Uploaded File: " + FileUpload1.FileName;
+        if (File.Exists(UploadTempFile))
+            File.Delete(UploadTempFile);
+        FileUpload1.SaveAs(UploadTempFile);
+    }
+    protected void FileUpload1_UploadedFileError(object sender, AjaxControlToolkit.AsyncFileUploadEventArgs e)
+    {
+
+    }
+
+    protected void cmdCheck_Click(object sender, EventArgs e)
+    {
+        Panel1.Visible = false;
+        ParseFile(UploadTempFile);        
+    }
+    private void RunNonQuery(string Query, string ConnectionStringsName, CommandType commandType)
+    {
+        string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringsName].ConnectionString;
+        SqlConnection oConn = new SqlConnection(oConnString);
+        SqlCommand oCommand = new SqlCommand(Query, oConn);
+        oCommand.CommandTimeout = 0;
+        oCommand.CommandType = commandType;
+        if (oConn.State == ConnectionState.Closed)
+            oConn.Open();
+        oCommand.ExecuteNonQuery();
+    }
+
+    private void ParseFile(string FileName)
+    {
+
+        DataSet1.Temp_MsgDataTable DT = new DataSet1.Temp_MsgDataTable();
+
+        RunNonQuery("EXEC sp_Delete_Temp_Msg '" + Session.SessionID + "'", "CardDataConnectionString", CommandType.Text);
+
+        FileInfo FI = new FileInfo(FileName);
+        try
+        {
+            using (ExcelPackage package = new ExcelPackage(FI))
+            {
+                ExcelWorkbook workBook = package.Workbook;
+                if (workBook.Worksheets.Count > 0)
+                {
+                    ExcelWorksheet currentWorksheet = workBook.Worksheets[1];
+
+                    for (int r = 1; r <= currentWorksheet.Dimension.End.Row; r++)
+                    {
+                        try
+                        {
+                            string Mobile = string.Format("{0}", currentWorksheet.Cells["A" + r].Value);
+                            string Msg = string.Format("{0}", currentWorksheet.Cells["B" + r].Value);
+
+                            DataSet1.Temp_MsgRow oRow = DT.NewTemp_MsgRow();
+                            oRow.Mobile = Mobile;
+                            oRow.Msg = Msg;
+                            oRow.SessionID = Session.SessionID;
+                            oRow.EmpID = Session["EMPID"].ToString();
+
+                            //ObjectDataSource1.InsertParameters["Mobile"].DefaultValue = Mobile;
+                            //ObjectDataSource1.InsertParameters["Msg"].DefaultValue = Msg;
+                            //ObjectDataSource1.InsertParameters["SessionID"].DefaultValue = Session.SessionID;
+                            //ObjectDataSource1.InsertParameters["EmpID"].DefaultValue = Session["EMPID"].ToString();
+
+                            //ObjectDataSource1.Insert();
+
+                            DT.Rows.Add(oRow);
+
+                        }
+                        catch (Exception) { }
+
+                    }
+
+                    string connString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+
+                    // open the destination data
+                    using (SqlConnection destinationConnection = new SqlConnection(connString))
+                    {
+                        // open the connection
+                        destinationConnection.Open();
+                        using (SqlBulkCopy bulkCopy =
+                             new SqlBulkCopy(destinationConnection.ConnectionString,
+                                    SqlBulkCopyOptions.TableLock))
+                        {
+                            bulkCopy.DestinationTableName = "Temp_Msg";
+                            bulkCopy.WriteToServer(DT);
+
+                        }
+                    }
+                }
+            }
+            Panel1.Visible = false;
+            //GridView1.Visible = true;
+            //ObjectDataSource1.Select();
+            GridView1.DataBind();
+
+            try
+            {
+                File.Delete(FileName);
+            }
+            catch (Exception) { }
+        }
+        catch (Exception)
+        {
+            Panel2.Visible = false;
+            cmdUpdate.Visible = false;
+            lblStatus.Text = "Parsing file failed. Please check your file format.";
+            File.Delete(UploadTempFile);
+        }
+
+        Panel2.Visible = true;
+    }
+
+    protected void cmdUpdate_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            cmdUpdate.Visible = false;
+            //RunNonQuery("EXEC sp_SMS_Bulk_Insert '" + Session.SessionID + "', '" + Session["EMPID"].ToString() + "', '" + txtStartDT.Text + "'", "CardDataConnectionString", CommandType.Text);
+            string Query = "sp_SMS_Bulk_Insert";
+            string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+            SqlConnection oConn = new SqlConnection(oConnString);
+            SqlCommand oCommand = new SqlCommand(Query, oConn);
+
+            oCommand.Parameters.AddWithValue("@SessionID", Session.SessionID);
+            oCommand.Parameters.AddWithValue("@EmpID", Session["EMPID"].ToString());
+            DateTime StartDT = DateTime.Parse(txtStartDT.Text);
+            oCommand.Parameters.Add("@StartDate", SqlDbType.DateTime).Value = StartDT;
+
+            oCommand.CommandTimeout = 0;
+            oCommand.CommandType = CommandType.StoredProcedure;
+            if (oConn.State == ConnectionState.Closed)
+                oConn.Open();
+            oCommand.ExecuteNonQuery();
+
+            lblStatus.Text = "All SMS saved in outbox queue.";
+        }
+        catch (Exception ex)
+        {
+            lblStatus.Text = (ex.Message);
+        }
+    }
+
+    protected void ObjectDataSource1_Selected1(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        if (e.AffectedRows == 0)
+        {
+            cmdUpdate.Visible = false;
+            lblStatus.Text = "No SMS Found.";
+        }
+        else
+        {
+            lblStatus.Text = string.Format("Total SMS Found: {0}", e.AffectedRows);
+            cmdUpdate.Visible = true;
+        }
+    }
+}

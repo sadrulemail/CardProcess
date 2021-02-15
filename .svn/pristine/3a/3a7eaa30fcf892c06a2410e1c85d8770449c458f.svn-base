@@ -1,0 +1,150 @@
+﻿using System;
+using System.IO;
+using System.Web.UI.WebControls;
+using OfficeOpenXml;
+using System.Data;
+using System.Web.UI;
+using System.Web;
+
+public partial class ForwardingReceive : System.Web.UI.Page
+{   
+    protected void Page_Load(object sender, EventArgs e)
+    {       
+        TrustControl1.getUserRoles();
+        if (!IsPostBack)
+        { 
+            txtSearch.Focus();        
+            txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date.AddDays(-30));
+            txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+        }
+
+        GridView1.Visible = IsPostBack;
+    }
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void cboBranch_DataBound(object sender, EventArgs e)
+    {
+        foreach (ListItem i in cboBranch.Items)
+
+            i.Selected = false;
+
+
+        if (Session["BRANCHID"].ToString() != "1")
+        {
+            foreach (ListItem ii in cboBranch.Items)
+            {
+                if (ii.Value == Session["BRANCHID"].ToString())
+                    ii.Selected = true;
+                else
+                    ii.Enabled = false;
+            }
+        }
+
+    }
+
+    protected void SqlDataSource2_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        if(e.AffectedRows>0)
+        {
+            lblMsg.Visible = true;
+            lblMsg.Text = "<b>Total Records: </b>" + e.AffectedRows.ToString();
+        }
+        else
+            lblMsg.Visible = false;
+        downloadxlsx.Visible = e.AffectedRows > 0;
+    }
+
+    protected void downloadxlsx_Click(object sender, EventArgs e)
+    {
+        string FileName = Path.GetTempFileName();
+        try
+        {
+            FileInfo FI = new FileInfo(FileName);
+            if (File.Exists(FileName)) File.Delete(FileName);
+            using (ExcelPackage xlPackage = new ExcelPackage(FI))
+            {
+                ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("Card Received");
+                int StartRow = 1;
+
+                //Adding Title Row
+                worksheet.Column(1).Width = 15;
+                worksheet.Column(2).Width = 35;
+                worksheet.Column(3).Width = 20;
+                worksheet.Column(4).Width = 20;
+                worksheet.Column(5).Width = 20;
+                worksheet.Cells["A1:K1"].Style.Font.Bold = true;
+                worksheet.Cells["A1:K1"].Style.WrapText = true;
+
+
+                //Adding Title Row
+                worksheet.Cells[StartRow, 1].Value = "Batch";
+                worksheet.Cells[StartRow, 2].Value = "Customer Name";
+                worksheet.Cells[StartRow, 3].Value = "A/C Number";
+                worksheet.Cells[StartRow, 4].Value = "Card Number";
+                worksheet.Cells[StartRow, 5].Value = "Request Type";
+
+
+                int R;
+
+                DataView DV = (DataView)SqlDataSource2.Select(DataSourceSelectArguments.Empty);
+
+                for (int r = 0; r < DV.Table.Rows.Count; r++)
+                {
+                    R = StartRow + r + 1;
+
+                    if (DV.Table.Rows[r]["Batch"] != DBNull.Value)
+                        worksheet.Cells[R, 1].Value = DV.Table.Rows[r]["Batch"].ToString();
+                    if (DV.Table.Rows[r]["CustomerName"] != DBNull.Value)
+                        worksheet.Cells[R, 2].Value = DV.Table.Rows[r]["CustomerName"].ToString();
+                    if (DV.Table.Rows[r]["AccountNo"] != DBNull.Value)
+                        worksheet.Cells[R, 3].Value = DV.Table.Rows[r]["AccountNo"].ToString();
+                    if (DV.Table.Rows[r]["CardNumber"] != DBNull.Value)
+                        worksheet.Cells[R, 4].Value = DV.Table.Rows[r]["CardNumber"].ToString();
+                    if (DV.Table.Rows[r]["ReqTypeName"] != DBNull.Value)
+                        worksheet.Cells[R, 5].Value = DV.Table.Rows[r]["ReqTypeName"].ToString();
+
+                }
+
+                worksheet.Cells["A1:I"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                //worksheet.Cells["I1:I"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                //worksheet.Cells["F1:F"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                //worksheet.Cells["E1:E"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                //worksheet.Cells["K1:K"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                //Adding Properties
+                xlPackage.Workbook.Properties.Title = "Card Received" + DateTime.Now.Date.ToString("dd/MM/yyyy");
+                xlPackage.Workbook.Properties.Author = "Sadrul(sadrul.email@gmail.com)";
+                xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0} ({1})", Session["FULLNAME"], "sadrul.email@gmail.com");
+
+                xlPackage.Save();
+            }
+
+
+            //Reading File Content
+            byte[] content = File.ReadAllBytes(FileName);
+            File.Delete(FileName);
+
+            //Downloading File
+            Response.Clear();
+            Response.ClearContent();
+            Response.ClearHeaders();
+            Response.ContentType = "application/ms-excel";
+            Response.AddHeader("Content-Disposition", "attachment;filename=" + "Card_Received_" + DateTime.Now.Date.ToString("dd/MM/yyyy") + ".xlsx");
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.BinaryWrite(content);
+            Response.End();
+        }
+        catch (Exception exx) { TrustControl1.ClientMsg(exx.Message); }
+
+    }
+
+
+}
+
+

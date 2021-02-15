@@ -1,0 +1,65 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class Branch_Mark : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+
+        if (!TrustControl1.isRole("ADMIN"))
+        {            
+            Response.Write("No Permission.<br><br><a href=''>Home</a>");
+            Response.End();        
+        }
+
+        Title = "Branch Location Mark";
+    }
+    protected void SqlDataSource2_Inserted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void SqlDataSource2_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        GridView1.DataBind();
+        GridView1.SelectedIndex = -1;
+    }
+    protected void cmdNew_Click(object sender, EventArgs e)
+    {
+        DetailsView1.ChangeMode(DetailsViewMode.Insert);
+    }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        try
+        {
+            DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+            int index = GridView1.SelectedIndex;
+            hidBranchID.Value = (GridView1.Rows[index].Cells[1].Text).ToString();
+        }
+        catch(Exception exx) { TrustControl1.ClientMsg(exx.Message); }
+    }
+
+    protected void SqlDataSource4_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblRecord.Text = "<b>Total Record(s):</b>" + e.AffectedRows.ToString();
+        lblRecord.Visible = e.AffectedRows > 0;
+    }
+    protected void SqlDataSource7_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        Label1.Text = "<b>Total Record(s):</b>" + e.AffectedRows.ToString();
+        Label1.Visible = e.AffectedRows > 0;
+    }
+    protected void tabContainer_ActiveTabChanged(object sender, EventArgs e)
+    {
+        if (tabContainer.ActiveTabIndex == 0)
+            GridView1.DataBind();
+        else if (tabContainer.ActiveTabIndex == 1)
+            GridView2.DataBind();
+        else if (tabContainer.ActiveTabIndex == 2)
+            GridView3.DataBind();
+    }
+}

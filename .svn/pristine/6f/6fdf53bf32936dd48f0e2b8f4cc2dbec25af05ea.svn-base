@@ -1,0 +1,60 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+
+public partial class ForwardingReceived : System.Web.UI.Page
+{
+    
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+        if (!IsPostBack)
+            txtSearch.Focus();       
+    }
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+
+    }
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void cboBranch_DataBound(object sender, EventArgs e)
+    {
+        foreach (ListItem i in cboBranch.Items)
+
+            i.Selected = false;
+
+
+        if (Session["BRANCHID"].ToString() != "1")
+        {
+            foreach (ListItem ii in cboBranch.Items)
+            {
+                if (ii.Value == Session["BRANCHID"].ToString())
+                    ii.Selected = true;
+                else
+                    ii.Enabled = false;
+            }
+        }
+
+    }
+
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        if(e.AffectedRows>0)
+        {
+            lblMsg.Visible = true;
+            lblMsg.Text = "<b>Total Records: </b>" + e.AffectedRows.ToString();
+        }
+        else
+            lblMsg.Visible = false;
+    }
+}
+    
+   

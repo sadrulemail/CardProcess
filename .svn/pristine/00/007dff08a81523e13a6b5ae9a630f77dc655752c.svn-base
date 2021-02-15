@@ -1,0 +1,95 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="SMS_New.aspx.cs" Inherits="SMS_New" %>
+
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc2" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    Send New SMS
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <table class="Panel1 ui-corner-all" style="margin-left:100px">
+                <tr>
+                    <td>
+                        <table>
+                            <tr>
+                                <%--<td valign="top" style="font-size: small; padding: 10px;">
+                        <b>Parameters</b><br />
+                        <asp:TextBox ID="P1" runat="server" Text="" Width="100px"></asp:TextBox>
+                    </td>
+                    <td valign="top" style="background-color: Silver; font-size: small; padding: 10px;
+                        border: 1px solid Green">
+                        <asp:Label ID="lbl1" CssClass="Link2" runat="server" Text="Expiry Msg" Style="cursor: pointer"
+                            onclick='document.getElementById("ctl00_ContentPlaceHolder2_txtMsg").value = "Dear Card Member, \nYour Trust Credit Card will expire on " + document.getElementById("ctl00_ContentPlaceHolder2_P1").value + ". Please contact Trust Bank at 8712956 for reissue card. Thank You.";RefreshSMSCount();'></asp:Label><br />
+                        <asp:Label ID="lbl2" CssClass="Link2" runat="server" Text="Expired Msg" Style="cursor: pointer"
+                            onclick='document.getElementById("ctl00_ContentPlaceHolder2_txtMsg").value = "Dear Trust Card Holder, \nYour Trust Credit Card has been expired and reissued card is ready for delivery. Please contact Trust Bank at 8712956. Thank you.";RefreshSMSCount();'></asp:Label>
+                        <br />
+                        <asp:Label ID="lbl3" CssClass="Link2" runat="server" Text="Expiry Msg 2" Style="cursor: pointer"
+                            onclick='document.getElementById("ctl00_ContentPlaceHolder2_txtMsg").value = "Dear Card Member,\nYour Trust Credit Card will expire on " + document.getElementById("ctl00_ContentPlaceHolder2_P1").value + " and reissued card is ready for delivery. Please contact Trust Bank at 8712956. Thank you.";RefreshSMSCount();'></asp:Label>
+                    
+                    </td>--%>
+                                <td valign="top" style="padding: 7px">
+                                    <table>
+                                        <tr>
+                                            <td style="font-size: small">
+                                                To:
+                                            </td>
+                                            <td>
+                                                <asp:TextBox runat="server" ID="txtTo" Text="+880" Width="200px"></asp:TextBox>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-size: small" valign="top">
+                                                Message:
+                                            </td>
+                                            <td>
+                                                <asp:TextBox runat="server" ID="txtMsg" Text="" MaxLength="160" Width="300px" TextMode="MultiLine"
+                                                    Rows="6" Font-Names="Arial"></asp:TextBox>
+                                                <asp:Label runat="server" ID="lblSMSCount" Text="160" Font-Size="Small"></asp:Label>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                            </td>
+                                            <td>
+                                                <asp:Button runat="server" ID="txtSend" Text="Send" Width="100px" OnClick="txtSend_Click" />
+                                                <asp:ConfirmButtonExtender ID="txtSend_ConfirmButtonExtender" runat="server" ConfirmText="Do you want to send SMS?"
+                                                    Enabled="True" TargetControlID="txtSend">
+                                                </asp:ConfirmButtonExtender>
+                                                <asp:SqlDataSource ID="SqlDataSource1" runat="server" ConnectionString="<%$ ConnectionStrings:SMSConnectionString %>"
+                                                    SelectCommand="sp_SMS_Send" SelectCommandType="StoredProcedure">
+                                                    <SelectParameters>
+                                                        <asp:ControlParameter ControlID="txtTo" Name="Mobile" PropertyName="Text" Type="String" />
+                                                        <asp:ControlParameter ControlID="txtMsg" Name="Msg" PropertyName="Text" Type="String" />
+                                                        <asp:Parameter DefaultValue="19" Name="APPID" Type="Int32" />
+                                                        <asp:SessionParameter Name="EmpID" SessionField="EMPID" Type="String" />
+                                                    </SelectParameters>
+                                                </asp:SqlDataSource>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </ContentTemplate>
+    </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false" 
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif" 
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

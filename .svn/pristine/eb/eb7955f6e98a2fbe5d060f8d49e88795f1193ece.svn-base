@@ -1,0 +1,102 @@
+﻿using System;
+using System.Web.UI.WebControls;
+
+public partial class Search_Reissue_Request : System.Web.UI.Page
+{
+    
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+
+        if (!IsPostBack)
+        {
+            txtSearch.Focus();
+            txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date.AddMonths(-1));
+            txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+        }
+        else
+            GridView1.Visible = true;
+       
+    }
+    protected void GridView1_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_RowEditing(object sender, GridViewEditEventArgs e)
+    {
+        GridView1.Rows[e.NewEditIndex].Focus();
+    }
+    protected void GridView1_RowUpdating(object sender, GridViewUpdateEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_SelectedIndexChanging(object sender, GridViewSelectEventArgs e)
+    {
+        DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+    }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        try
+        {
+            modal.Show();
+            //hidCardNumber.Value= GridView1.
+        }
+        catch (Exception exx) { }
+    }
+    protected void DetailsView1_ItemInserted(object sender, DetailsViewInsertedEventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void DetailsView1_ItemUpdated(object sender, DetailsViewUpdatedEventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void SqlDataSource2_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(Msg);
+        GridView1.DataBind();
+    }
+    protected void DetailsView1_ModeChanged(object sender, EventArgs e)
+    {
+        //if (DetailsView1.CurrentMode == DetailsViewMode.ReadOnly)
+        //    DetailsView1.CellPadding = 1;
+        //else
+        //    DetailsView1.CellPadding = 1;
+        modal.Show();
+    }
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        Response.Redirect("New_Reissue_Request.aspx?id="+txtFilter.Text);
+
+    }
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void cboBranch_DataBound(object sender, EventArgs e)
+    {
+        //foreach (ListItem i in cboBranch.Items)
+        //    i.Selected = false;
+
+        //if (Session["BRANCHID"].ToString() != "1")
+        //{
+        //    foreach (ListItem ii in cboBranch.Items)
+        //    {
+        //        if (ii.Value == Session["BRANCHID"].ToString())
+        //            ii.Selected = true;
+        //        else
+        //            ii.Enabled = false;
+        //    }
+        //}
+
+    }
+
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblStatus.Text = string.Format("Total: <b>{0:N0}</b>", e.AffectedRows);
+    }
+}
+    
+   

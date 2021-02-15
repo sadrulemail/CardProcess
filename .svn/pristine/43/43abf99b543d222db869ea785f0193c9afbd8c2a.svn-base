@@ -1,0 +1,542 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Data.SqlClient;
+using OfficeOpenXml;
+using System.IO;
+using SocialExplorer.IO.FastDBF;
+using System.Net;
+using System.Configuration;
+
+public partial class Supplementary_Export : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+        if (!TrustControl1.isRole("ADMIN"))
+        {
+            if (Session["DEPTID"].ToString() != "7")    //Not IT & Cards
+            {
+                Response.Write("No Permission.<br><br><a href=''>Home</a>");
+                Response.End();
+            }
+        }
+        if (!IsPostBack)
+        {
+            SetDate_Today();
+            RefreshControls();
+        }
+        Title = "Supplementary Export to ITCL";
+
+        if (!IsPostBack && !string.IsNullOrEmpty(Request.QueryString["batch"]) && !string.IsNullOrEmpty(Request.QueryString["type"]))
+        {
+            string FileName = Path.GetTempFileName();
+            string BatchID = Request.QueryString["batch"].ToString();
+
+            if (string.Format("{0}", Request.QueryString["type"]) == "xlsx")
+            {                
+                
+                try
+                {
+                    //FileName = "C:\\1.xlsx";
+                    FileInfo FI = new FileInfo(FileName);
+                    if (File.Exists(FileName)) File.Delete(FileName);
+                    using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                    {
+                        ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("SupplementaryCard");
+                        int StartRow = 1;
+
+                        worksheet.Cells[StartRow, 1].Value = "Accountno";
+                        worksheet.Cells[StartRow, 2].Value = "Amount_tk";
+                        worksheet.Cells[StartRow, 3].Value = "Dr_Cr";
+                        worksheet.Cells[StartRow, 4].Value = "Trn_br_code";
+
+                        worksheet.Column(1).Width = 22;
+                        worksheet.Column(2).Width = 20;
+                        worksheet.Column(3).Width = 15;
+                        worksheet.Column(4).Width = 15;
+
+                        StartRow = 2;
+                        DataView DV = (DataView)SqlDataSourceReExportPin.Select(DataSourceSelectArguments.Empty);
+                        int R = 0;
+                        for (int r = 0; r < DV.Table.Rows.Count; r++)
+                        {
+                            R = StartRow + r;
+                            if (DV.Table.Rows[r]["Account"] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, 1].Value = DV.Table.Rows[r]["Account"].ToString();
+                                //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                            }
+                            if (DV.Table.Rows[r]["PIN_IssueFee"] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, 2].Value = DV.Table.Rows[r]["PIN_IssueFee"].ToString();
+                                worksheet.Cells[R, 2].Style.Numberformat.Format = "#.##";
+                            }
+
+                            worksheet.Cells[R, 3].Value = "Dr";
+
+
+
+                            if (DV.Table.Rows[r]["Account"] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, 4].Value = DV.Table.Rows[r]["Account"].ToString().Trim().Substring(0, 4);
+                            }
+                        }
+                        worksheet.Cells["A1:D1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        worksheet.Cells["B1:B"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                        worksheet.Cells["C1:C"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        worksheet.Cells["D1:D"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        worksheet.Cells["A1:D"].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Top;
+                        worksheet.Cells["A1:D1"].Style.Font.Bold = true;
+
+                        //Adding Properties
+                        xlPackage.Workbook.Properties.Title = "Pin Reissue (Batch " + BatchID + ")";
+                        xlPackage.Workbook.Properties.Author = "Sadrul Alom";
+                        xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                       // xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0} ({1})", Session["FULLNAME"], Session["EMAIL"]);
+
+                        xlPackage.Save();
+                    }
+
+
+                    //Reading File Content
+                    byte[] content = File.ReadAllBytes(FileName);
+                    File.Delete(FileName);
+
+                    //Downloading File
+                    Response.Clear();
+                    Response.ClearContent();
+                    Response.ClearHeaders();
+                    Response.ContentType = "application/ms-excel";
+                    Response.AddHeader("Content-Disposition", "attachment;filename=" + "Pin_Reissue_Batch_" + BatchID + ".xlsx");
+                    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                    Response.BinaryWrite(content);
+                    Response.End();
+
+                }
+                catch (Exception ex)
+                {
+                    TrustControl1.ClientMsg(ex.Message);
+                }
+            }
+            else if (string.Format("{0}", Request.QueryString["type"]) == "dbf")
+            {
+                try
+                {
+                    DbfFile odbf = new DbfFile();
+                    odbf.Open(FileName, FileMode.Create);
+
+                    //odbf.Header.AddColumn(new DbfColumn("NAMEONCARD", DbfColumn.DbfColumnType.Character, 20, 0));
+                    //odbf.Header.AddColumn(new DbfColumn("ACCOUNT", DbfColumn.DbfColumnType.Character, 20, 0));
+                    odbf.Header.AddColumn(new DbfColumn("PAN", DbfColumn.DbfColumnType.Character, 20, 0));
+                    odbf.Header.AddColumn(new DbfColumn("MBR", DbfColumn.DbfColumnType.Number, 3, 0));
+                    odbf.Header.AddColumn(new DbfColumn("SIGNSTAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                    odbf.Header.AddColumn(new DbfColumn("CRD_STAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                    DbfRecord orec = new DbfRecord(odbf.Header);
+
+                    DataView DV = (DataView)SqlDataSourceReExportPin.Select(DataSourceSelectArguments.Empty);
+                    for (int r = 0; r < DV.Table.Rows.Count; r++)
+                    {
+                        //orec[0] = DV.Table.Rows[r]["NameOnCard"].ToString();
+                        //orec[1] = DV.Table.Rows[r]["Account"].ToString();
+                        orec[0] = DV.Table.Rows[r]["CardNumber"].ToString();
+                        orec[1] = DV.Table.Rows[r]["MBR"].ToString();
+                        orec[2] = DV.Table.Rows[r]["SIGNSTAT"].ToString();
+                        orec[3] = DV.Table.Rows[r]["CRD_STAT"].ToString();
+                        odbf.Write(orec, true);
+                    }
+                    odbf.Close();
+
+
+                    //Reading File Content
+                    byte[] content = File.ReadAllBytes(FileName);
+                    File.Delete(FileName);
+
+                    //Downloading File
+                    Response.Clear();
+                    Response.ClearContent();
+                    Response.ClearHeaders();
+                    Response.ContentType = "application/octet-stream";
+                    Response.AddHeader("Content-Disposition", "attachment;filename=" + "Pin_Reissue_Batch_" + BatchID + ".dbf");
+                    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                    Response.BinaryWrite(content);
+                    Response.End();
+                }
+                catch (Exception ex)
+                {
+                    TrustControl1.ClientMsg(ex.Message);
+                }
+            }
+        }
+    }
+    protected void SqlDataSource6_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        //chkSelectAllBranch.Enabled = e.AffectedRows > 0;
+        lblmsg.Text = "Total Branch:" +"<b>"+ e.AffectedRows.ToString()+"</b>";
+        lblmsg.Visible = e.AffectedRows > 0;
+        cmdExport1.Enabled = e.AffectedRows > 0;
+    }
+    protected void Button2_Click(object sender, EventArgs e)
+    {
+        GridView6.DataBind();
+    }
+    protected void headerLevelCheckBox_CheckedChanged(object sender, EventArgs e)
+    {
+        CheckBox headerChkBox = ((CheckBox)GridView6.HeaderRow.FindControl("headerLevelCheckBox"));
+
+        if (headerChkBox.Checked)
+        {
+            foreach (GridViewRow gvRow in GridView6.Rows)
+            {
+                CheckBox rowChkBox = ((CheckBox)gvRow.FindControl("rowLevelCheckBox"));
+                rowChkBox.Checked = true;
+            }
+        }
+        else
+        {
+            foreach (GridViewRow gvRow in GridView6.Rows)
+            {
+                CheckBox rowChkBox = ((CheckBox)gvRow.FindControl("rowLevelCheckBox"));
+                rowChkBox.Checked = false;
+            }
+        }
+    }
+    private decimal checkValue(string Value)
+    {
+        if (Value == "&nbsp;")
+            return 0;
+        else
+            return decimal.Parse(Value);
+
+    }
+    protected void GridView6_DataBound(object sender, EventArgs e)
+    {
+        decimal TotalCards = 0;
+       
+
+        try
+        {
+            for (int i = 0; i < GridView6.Rows.Count; i++)
+            {
+                //TrustControl1.ClientMsg(grdvDrCrDetails.Rows[i].Cells[2].Text);
+                TotalCards += checkValue(GridView6.Rows[i].Cells[4].Text);
+               
+            }
+            GridView6.FooterRow.Cells[3].Text = "Total Card(s)";
+            GridView6.FooterRow.Cells[4].Text = TotalCards.ToString();
+            //GridView6.FooterRow.Cells[3].HorizontalAlign = HorizontalAlign.Right;
+            //GridView6.FooterRow.Cells[4].HorizontalAlign = HorizontalAlign.Right;
+        }
+        catch (Exception exx)
+        {
+            //TrustControl1.ClientMsg(exx.Message.ToString());
+        }
+    }
+    protected void cmdExport1_Click(object sender, EventArgs e)
+    {
+        if (cboMaxRowsToSent1.SelectedIndex == 0)
+        {
+            TrustControl1.ClientMsg("Please select total export.");
+            return;
+        }
+        else
+        {
+            try
+            {
+                string IDs = "";
+                for (int i = 0; i < GridView6.Rows.Count; i++)
+                {
+                    CheckBox chk = (CheckBox)(GridView6.Rows[i].FindControl("rowLevelCheckBox"));
+                    if (chk.Checked)
+                    {
+                        IDs += chk.Text + ",";
+                    }
+                }
+                if (IDs.Length >= 2)
+                {
+                    // IDs = IDs.Substring(1);
+                    string Msg = "";
+                    bool done = false;
+
+                    using (SqlConnection conn = new SqlConnection())
+                    {
+                        string Query = "s_Supplementary_ExportToITCL";
+                        conn.ConnectionString = ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+
+                        using (SqlCommand cmd = new SqlCommand())
+                        {
+                            cmd.CommandText = Query;
+                            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                            cmd.Parameters.Add("@IDs", System.Data.SqlDbType.VarChar, 8000).Value = IDs;
+                            cmd.Parameters.Add("@EmpID", System.Data.SqlDbType.VarChar).Value = Session["EMPID"].ToString();
+                            cmd.Parameters.Add("@CardType", System.Data.SqlDbType.VarChar).Value = DropDownList2.SelectedValue.ToString();
+                            cmd.Parameters.Add("@MaxRowsToSent", System.Data.SqlDbType.BigInt).Value = cboMaxRowsToSent1.SelectedValue;
+
+                            SqlParameter Sql_Msg = new SqlParameter("@Batch", System.Data.SqlDbType.VarChar, 255);
+                            Sql_Msg.Direction = System.Data.ParameterDirection.InputOutput;
+                            Sql_Msg.Value = Msg;
+                            cmd.Parameters.Add(Sql_Msg);
+
+                            cmd.Connection = conn;
+                            conn.Open();
+
+                            cmd.ExecuteNonQuery();
+                            Msg = "Export Batch:" + string.Format("{0}", Sql_Msg.Value);
+                            lblDownloadLink.Text = string.Format("<a href='Supplementary_Export_Download.aspx?batch={0}&type=xml' class='Link2'>Download Batch # {0}<a>", Sql_Msg.Value);
+                        }
+                    }
+
+                    TrustControl1.ClientMsg(Msg);
+                    GridView6.DataBind();
+
+                }
+                else
+                    TrustControl1.ClientMsg("Please check mark id for issue.");
+
+                //lblIDs.Text = IDs.Replace(",", ", ");
+            }
+            catch (Exception ex) { TrustControl1.ClientMsg(ex.Message); }
+        }
+    }
+    private void SetDate_Today()
+    {
+        TextBox1.Text = DateTime.Now.ToString("dd/MM/yyyy");
+        TextBox2.Text = DateTime.Now.ToString("dd/MM/yyyy");
+    }
+    protected void tabContainer_ActiveTabChanged(object sender, EventArgs e)
+    {
+        if (tabContainer.ActiveTabIndex == 0)
+            GridView2.DataBind();
+        else if (tabContainer.ActiveTabIndex == 1)
+            GridView1.DataBind();
+    }
+    protected void SqlDataSourceSearch_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+
+        TrustControl1.ClientMsg(Msg);
+        GridView5.DataBind();
+    }
+    protected void SqlDataSourceSearch_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblmsg1.Visible = e.AffectedRows > 0;
+        lblmsg1.Text = "Total Record(s):<b>"+e.AffectedRows.ToString()+"</b>";
+    }
+    protected void Button1_Click(object sender, EventArgs e)
+    {        
+        GridView5.DataBind();
+    }
+    protected void DropDownList1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        RefreshControls();
+    }
+    private void RefreshControls()
+    {
+        DateTime T = DateTime.Now.Date;
+        DateTime S = T;
+        DateTime E = T;
+
+        if (DropDownList1.SelectedItem.Value == "Custom Range")
+        {
+            DropDownList1.BackColor = System.Drawing.Color.Transparent;
+            TextBox1.Enabled = true;
+            TextBox2.Enabled = true;
+        }
+        else
+        {
+            DropDownList1.BackColor = System.Drawing.Color.Yellow;
+
+            switch (DropDownList1.SelectedItem.Value)
+            {
+                case "Today":
+                    SetDate_Today();
+                    break;
+                case "Yesterday":
+                    S = T.AddDays(-1);
+                    E = T.AddDays(-1);
+                    break;
+                case "This Week":
+                    S = T.AddDays(-int.Parse(T.DayOfWeek.ToString("d")));
+                    E = T;
+                    break;
+                case "Last Week":
+                    S = T.AddDays(-7 - int.Parse(T.DayOfWeek.ToString("d")));
+                    E = S.AddDays(6);
+                    break;
+                case "This Month":
+                    S = T.AddDays(-T.Day + 1);
+                    E = T;
+                    break;
+                case "Last Month":
+                    S = (T.AddDays(-T.Day + 1)).AddMonths(-1);
+                    E = T.AddDays(-T.Day);
+                    break;
+                case "This Year":
+                    S = T.AddDays(-T.DayOfYear + 1);
+                    E = T;
+                    break;
+                case "Show All":
+                    S = new DateTime(1900, 1, 1);
+                    E = S;
+                    break;
+            }
+
+            if (S == new DateTime(1900, 1, 1))
+            {
+                TextBox1.Text = "";
+                TextBox2.Text = "";
+            }
+            else
+            {
+                TextBox1.Text = S.ToString("dd/MM/yyyy");
+                TextBox2.Text = E.ToString("dd/MM/yyyy");
+            }
+
+            RefreshLabel();
+
+            GridView1.DataBind();
+
+            TextBox1.Enabled = false;
+            TextBox2.Enabled = false;
+        }
+    }
+    private void RefreshLabel()
+    {
+
+    }
+
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    private string getCSV_ReExport(string BatchID)
+    {
+        StringBuilder csv = new StringBuilder();
+        DataView dv = (DataView)SqlDataSourceReExportPin.Select(DataSourceSelectArguments.Empty);
+
+        //csv.Append("\"File ID\",\"File Name\",\"Description\",\"Rack Name\",\"Status\"");
+        //csv.Append(Environment.NewLine);
+
+        for (int i = 0; i < dv.Table.Rows.Count; i++)
+        {
+            csv.Append(dv.Table.Rows[i][0]);
+            csv.Append(Environment.NewLine);
+        }
+        return csv.ToString();
+    }
+
+    
+
+   
+
+   
+
+    protected void cmdOpen_Click(object sender, EventArgs e)
+    {
+        try
+        {
+           // GridView3.DataBind();
+        }
+        catch (Exception exx)
+        {
+            TrustControl1.ClientMsg(exx.ToString());
+        }
+    }
+    protected void SqlDataSource1_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = string.Format("{0}", e.Command.Parameters["@Msg"].Value);
+        string Done = string.Format("{0}", e.Command.Parameters["@Done"].Value);
+        if (Done == "True")
+        {
+            TrustControl1.ClientMsg(Msg);
+            //GridView3.DataBind();
+        }
+        else
+            TrustControl1.ClientMsg(Msg);
+       
+    }
+
+    protected void SqlDataSource2_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = string.Format("{0}", e.Command.Parameters["@Msg"].Value);
+        string Done = string.Format("{0}", e.Command.Parameters["@Done"].Value);
+        if (Done == "True")
+        {
+            TrustControl1.ClientMsg(Msg);
+            GridView1.DataBind();
+        }
+        else
+            TrustControl1.ClientMsg(Msg);
+
+    }
+
+   
+    
+    protected void GridView3_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+       
+        
+        if (e.CommandName == "CHECK")
+        {            
+            TrustControl1.ClientMsg(e.CommandArgument.ToString());
+        }
+    }
+
+    
+   
+
+    protected void GridView2_DataBound(object sender, EventArgs e)
+    {
+        int Total = 0;
+        try
+        {
+            for (int i = 0; i < GridView2.Rows.Count; i++)
+            {
+                Total += int.Parse(GridView2.Rows[i].Cells[2].Text);
+            }
+            GridView2.FooterRow.Cells[2].Text = Total.ToString();
+        }
+        catch (Exception) { }
+
+        cmdExport.Enabled = Total > 0;
+
+        for (int i = 0; i < GridView2.Rows.Count; i++)
+        {
+            Panel p1 = new Panel();
+            p1.BackColor = System.Drawing.Color.White;
+            p1.BorderColor = System.Drawing.Color.Gray;
+            p1.BorderStyle = BorderStyle.Solid;
+            p1.BorderWidth = Unit.Pixel(1);
+            Panel pn = new Panel();
+            double percentage = (100 * double.Parse(GridView2.Rows[i].Cells[2].Text)) / (double)Total;
+            pn.Width = Unit.Percentage(percentage);
+            GridView2.Rows[i].Cells[3].ToolTip = string.Format("{0:N2}%", percentage);
+            pn.BackColor = System.Drawing.Color.Gray;
+            pn.Controls.Add(new LiteralControl("&nbsp;"));
+            p1.Controls.Add(pn);
+            pn.Style.Add("margin", "1px");
+            GridView2.Rows[i].Cells[3].Controls.Add(p1);
+        }
+    }
+
+    protected void cmdExport_Click1(object sender, EventArgs e)
+    {
+       
+        SqlDataSourceReExport.Select(DataSourceSelectArguments.Empty);
+    }
+    protected void SqlDataSource3_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        //cmdExport.Enabled = e.AffectedRows > 0;
+    }
+    protected void SqlDataSourceReExport_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string BatchID = e.Command.Parameters["@BatchNo"].Value.ToString();
+        Literal1.Text = string.Format("Download Batch-{0}: <a href='Supplementary_Export_Download.aspx?type=xlsx&batch={0}' target='_blank' class='Link'>XLSX</a> | <a href='Supplementary_Export_Download.aspx?type=dbf&batch={0}' target='_blank' class='Link'>DBF</a>", BatchID);
+        GridView2.DataBind();
+       
+    }
+}

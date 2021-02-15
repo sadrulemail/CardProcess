@@ -1,0 +1,17 @@
+﻿.print-small  {font-size:75% !important}
+
+
+.hide{display:none}
+.right{text-align:right}
+.nowrap{white-space:nowrap}
+.hidden-print {display:none !important}
+.hidden-screen {display:inherit !important}
+a {text-decoration: none}
+time{visibility:hidden}
+.hidden { display:none; }
+hr 
+{
+    margin: 0 20px;
+    border: none;
+    border-bottom: 1px dashed gray;
+}

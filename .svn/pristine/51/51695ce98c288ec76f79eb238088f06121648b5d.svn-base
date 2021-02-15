@@ -1,0 +1,286 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="Search_Reissue_Request.aspx.cs" Inherits="Search_Reissue_Request" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc3" %>
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Src="MyControl.ascx" TagName="MyControl" TagPrefix="uc2" %>
+<%@ Register Assembly="skmControls2" Namespace="skmControls2" TagPrefix="cc1" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    <asp:Label ID="lblTitle" runat="server" Text="Card Service Request"></asp:Label>
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <asp:Panel ID="Panel1" runat="server">
+                <table class="Panel1 ui-corner-all" style="display: inline-block">
+                    <tr>
+                        <td>
+                            <b>Account No./Card No.</b>
+                            <asp:TextBox ID="txtSearch" runat="server" placeholder="account no/card no" Width="150px"></asp:TextBox>
+                            <b>Request Type:</b>
+                            <asp:DropDownList ID="ddlRequestType" runat="server"
+                                AppendDataBoundItems="True" AutoPostBack="True">
+                                <asp:ListItem Text="Branch Request" Value="1"></asp:ListItem>
+                                <asp:ListItem Text="Auto Reissue" Value="2"></asp:ListItem>
+                                <asp:ListItem Text="All" Value="3"></asp:ListItem>
+                            </asp:DropDownList>
+                            <asp:Button ID="btnSearch" runat="server" Text="Search" Width="80px" CausesValidation="false"
+                                OnClick="btnSearch_Click" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Request Date:</b>
+                            <asp:TextBox ID="txtDateFrom" runat="server" Width="80px" CssClass="Date"></asp:TextBox>
+                            <b>to</b>
+                            <asp:TextBox ID="txtDateTo" runat="server" Width="80px" CssClass="Date"></asp:TextBox>
+                            <b>Send to ITCL:</b>
+                            <asp:DropDownList ID="ddlSendtoProcess" runat="server"
+                                AppendDataBoundItems="True" AutoPostBack="True">
+                                <asp:ListItem Text="All" Value="-1"></asp:ListItem>
+                                <asp:ListItem Text="No" Value="0"></asp:ListItem>
+                                <asp:ListItem Text="Yes" Value="1"></asp:ListItem>
+                            </asp:DropDownList>
+                            <b>Forwarding:</b>
+                            <asp:DropDownList ID="ddlForwarding" runat="server"
+                                AppendDataBoundItems="True" AutoPostBack="True">
+                                <asp:ListItem Text="All" Value="-1"></asp:ListItem>
+                                <asp:ListItem Text="Pending" Value="0"></asp:ListItem>
+                                <asp:ListItem Text="Completed" Value="1"></asp:ListItem>
+                            </asp:DropDownList>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Requested Branch:</b>
+                            <asp:DropDownList ID="cboBranch" runat="server" AppendDataBoundItems="True" AutoPostBack="True"
+                                DataSourceID="SqlDataSource3" DataTextField="branchname" DataValueField="branchid" OnDataBound="cboBranch_DataBound">
+                                <asp:ListItem Text="All Branch" Value="-1"></asp:ListItem>
+                            </asp:DropDownList>
+                            <asp:SqlDataSource ID="SqlDataSource3" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                                SelectCommand="SELECT  [branchid],[branchname]  FROM [CardData].[dbo].[v_BranchOnly]"
+                                SelectCommandType="Text"></asp:SqlDataSource>
+                            <b>By:</b>
+                            <asp:TextBox ID="txtEmp" runat="server" Text="" CssClass="" Width="50px" placeholder="empid"></asp:TextBox>
+                        </td>
+                    </tr>
+                </table>
+                <div style="display: inline-block; vertical-align: top; margin-left: 10px">
+                    <div class="Panel1 ui-corner-all">
+                        <b>Service Request ID: </b>
+                        <asp:TextBox ID="txtFilter" runat="server" Width="50px" onfocus="this.select()" placeholder="req id" TabIndex="0"></asp:TextBox>
+                        <asp:Button ID="cmdOK" runat="server" Text="Go" Width="50px" CausesValidation="false"
+                            OnClick="cmdOK_Click" UseSubmitBehavior="false" />
+                    </div>
+                    <br />
+                    <a href="http://172.22.1.26/blog/3281" target="_blank" class="Link" style="font-size: medium"><b>How to use?</b></a>
+                </div>
+            </asp:Panel>
+            <asp:GridView ID="GridView1" runat="server" BackColor="White" AllowPaging="true" Visible="false"
+                OnRowCancelingEdit="GridView1_RowCancelingEdit" OnRowEditing="GridView1_RowEditing" OnRowUpdating="GridView1_RowUpdating"
+                                OnSelectedIndexChanging="GridView1_SelectedIndexChanging" OnSelectedIndexChanged="GridView1_SelectedIndexChanged"
+                PageSize="30" CssClass="Grid" AllowSorting="true" BorderColor="#DEDFDE" BorderStyle="None"
+                BorderWidth="1px" CellPadding="4" ForeColor="Black" GridLines="Both" AutoGenerateColumns="False" DataKeyNames="ID"
+                PagerSettings-PageButtonCount="30" DataSourceID="SqlDataSource1" Style="font-size: small; font-family: Arial">
+                <RowStyle BackColor="#F7F7DE" CssClass="Grid" VerticalAlign="Top" />
+                <Columns>
+                    <asp:TemplateField HeaderText="RID" SortExpression="ReqID">
+                        <ItemTemplate>
+                            <a href='New_Reissue_Request.aspx?id=<%# Eval("ReqID") %>' title="View Request" target="_blank" class='<%# int.Parse(Eval("ReqID").ToString()) >0 ? "" : "hide" %>'>
+                                <img src="Images/open.png" /></a>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="CardNumber" HeaderText="Card Number" SortExpression="CardNumber"
+                        ReadOnly="true">
+                        <ItemStyle Font-Bold="true" />
+                    </asp:BoundField>
+                    <asp:BoundField DataField="Account" HeaderText="Account" ReadOnly="true" ItemStyle-HorizontalAlign="Center">
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:BoundField>
+                    <asp:BoundField DataField="NameOnCard" HeaderText="NameOnCard" ReadOnly="true"></asp:BoundField>
+                    <asp:BoundField DataField="DOB" HeaderText="Date of Birth" ReadOnly="true" DataFormatString="{0:dd/MM/yyyy}"></asp:BoundField>
+                    <%--<asp:BoundField DataField="Address" HeaderText="Address" ReadOnly="true"></asp:BoundField>--%>
+                    <%-- <asp:BoundField DataField="Email" HeaderText="Email" ReadOnly="true"></asp:BoundField>--%>
+                    <asp:BoundField DataField="Mobile" HeaderText="Mobile" ReadOnly="true"></asp:BoundField>
+                    <asp:BoundField DataField="SendToProcess" HeaderText="Send To Process" ReadOnly="true"></asp:BoundField>
+                    <asp:BoundField DataField="Fees" HeaderText="Fees" ReadOnly="true" DataFormatString="{0:N2}"></asp:BoundField>
+                    <asp:TemplateField HeaderText="Request By" SortExpression="InsertBy" ItemStyle-HorizontalAlign="Center">
+                        <ItemTemplate>
+                            <uc3:EMP ID="EMP1" Username='<%# Eval("InsertBy") %>' runat="server" />
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Request Date" SortExpression="InsertDT" ItemStyle-Wrap="false"
+                        ItemStyle-HorizontalAlign="Center">
+                        <ItemTemplate>
+                            <span title='<%# Eval("InsertDT", "{0:dddd, dd MMMM yyyy, hh:mm:ss tt}")%>'>
+                                <%# TrustControl1.ToRecentDateTime(Eval("InsertDT"))%></span>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="ServiceDesc" HeaderText="Service Desc" SortExpression="ServiceDesc" ReadOnly="true" HtmlEncode="false"></asp:BoundField>
+                    <asp:TemplateField HeaderText="Delivery Branch Update(Befor Forwarding)" HeaderStyle-Font-Bold="true" HeaderStyle-Wrap="true">
+                        <ItemTemplate>
+                            <asp:LinkButton ID="LinkButton1" runat="server" CommandName="SELECT" CommandArgument='<%# Eval("ID") %>' Visible='<%# Eval("ForwardingBatch").ToString() == "-1"  && Session["BRANCHID"].ToString()=="1" ? true : false %>'
+                                Height="20px" ToolTip="Open" CausesValidation="false">
+                                <img alt="" height="16px" width="16px" src='Images/new_window.png' border="0" />
+                            </asp:LinkButton>
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:TemplateField>
+                </Columns>
+                <FooterStyle BackColor="#CCCC99" />
+                <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Left" CssClass="PagerStyle" />
+                <PagerSettings Position="TopAndBottom" Mode="NumericFirstLast" />
+                <SelectedRowStyle BackColor="#CE5D5A" Font-Bold="True" ForeColor="White" />
+                <HeaderStyle BackColor="#6B696B" Font-Bold="false" ForeColor="White" Font-Names="Arial Narrow" />
+                <AlternatingRowStyle BackColor="White" />
+                <EmptyDataTemplate>
+                    <div style="border: solid 1px silver; padding: 10px; background-color: #F6F6F6; width: 500px">
+                        No Request Data Found.
+                    </div>
+                </EmptyDataTemplate>
+                <EditRowStyle BackColor="#C5E2FD" />
+            </asp:GridView>
+            <asp:Label ID="lblStatus" runat="server" Text=""></asp:Label>
+            <asp:SqlDataSource ID="SqlDataSource1" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="s_search_service_request" SelectCommandType="StoredProcedure" OnSelected="SqlDataSource1_Selected">
+                <SelectParameters>
+                    <asp:ControlParameter ControlID="txtSearch" Name="Search" PropertyName="Text" Type="String" DefaultValue="*" />
+                    <asp:ControlParameter ControlID="txtEmp" Name="Emp" PropertyName="Text" Type="String" DefaultValue="*" />
+                    <asp:ControlParameter ControlID="txtDateFrom" Name="DateFrom" PropertyName="Text" DefaultValue="01/01/1900" Type="DateTime" />
+                    <asp:ControlParameter ControlID="txtDateTo" Name="DateTo" PropertyName="Text" Type="DateTime" />
+                    <asp:ControlParameter ControlID="cboBranch" Name="BranchID" PropertyName="SelectedValue" DefaultValue="-1" />
+                    <asp:ControlParameter ControlID="ddlRequestType" Name="RequestType" PropertyName="SelectedValue" DefaultValue="1" />
+                    <asp:ControlParameter ControlID="ddlSendtoProcess" Name="Processed" PropertyName="SelectedValue" DefaultValue="-1" />
+                    <asp:ControlParameter ControlID="ddlForwarding" Name="Forwarding" PropertyName="SelectedValue" DefaultValue="-1" />
+                </SelectParameters>
+            </asp:SqlDataSource>
+
+            <%--  modal popup--%> 
+
+            <span style="visibility: hidden">
+                <asp:Button runat="server" ID="cmdPopup" /></span>
+            <asp:ModalPopupExtender ID="modal" runat="server" CancelControlID="ModalClose"
+                TargetControlID="cmdPopup"
+                PopupControlID="ModalPanel"
+                BackgroundCssClass="ModalPopupBG"
+                RepositionMode="RepositionOnWindowResizeAndScroll"
+                CacheDynamicResults="False"
+                Drag="true">
+            </asp:ModalPopupExtender>
+            <asp:Panel ID="ModalPanel" runat="server"
+                CssClass="ModalPanel1">
+                <div style="background: green">
+                    <asp:Panel runat="server" ID="ModalTitleBar" CssClass="MoveIcon"
+                        HorizontalAlign="Center">
+                        <table width="100%">
+                            <tr>
+                                <td align="left" style="color: White; font-size: 14pt; font-weight: bolder">
+                                    <asp:Label ID="ModalTitle" runat="server" Text="Delivery Info"></asp:Label>
+                                </td>
+                                <td align="right">
+                                    <a href="#" style="cursor: default">
+                                        <asp:Image ID="ModalClose" runat="server" ImageUrl="~/Images/close.gif" ToolTip="Close" />
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </asp:Panel>
+                    <asp:DetailsView ID="DetailsView1" runat="server" BackColor="White" BorderColor="#DEDFDE" 
+                        BorderStyle="Solid" BorderWidth="1px" CssClass="Grid modal-table" CellPadding="4" DataSourceID="SqlDataSource2"
+                        ForeColor="Black" AutoGenerateRows="False" OnItemInserted="DetailsView1_ItemInserted"
+                        OnItemUpdated="DetailsView1_ItemUpdated" DataKeyNames="ID" OnModeChanged="DetailsView1_ModeChanged"
+                        >
+                        <FooterStyle BackColor="#CCCC99" />
+                        <RowStyle BackColor="#F7F7DE" VerticalAlign="Top" />
+                        <PagerStyle BackColor="#F7F7DE" ForeColor="Black" />
+                        <Fields>
+                            <asp:TemplateField HeaderText="ID">
+                                <ItemTemplate>
+                                    <asp:Label ID="lblID" runat="server" Text='<%# Bind("ID") %>'></asp:Label>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Card Number">
+                                <ItemTemplate>
+                                    <asp:Label ID="lblCardNumber" runat="server" Text='<%# Eval("CardNumber") %>'></asp:Label>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Account No">
+                                <ItemTemplate>
+                                    <asp:Label ID="lblAccountNo" runat="server" Text='<%# Eval("Account") %>'></asp:Label>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:BoundField DataField="NameOnCard" HeaderText="Customer Name" SortExpression="NameOnCard"
+                                ReadOnly="true" ItemStyle-Font-Bold="true">
+                                <ItemStyle Font-Bold="false" />
+                            </asp:BoundField>
+                            <asp:TemplateField HeaderText="Delivery Overwrite Branch">
+                                <ItemTemplate>
+                                    <%# Eval("BranchName") %>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:DropDownList ID="cboDeliveryBranch" runat="server" SelectedValue='<%# Bind("DeliveryOverwrite") %>' 
+                                        DataSourceID="SqlDataSource_DeliveryBranch" DataTextField="BranchName" DataValueField="BranchID"
+                                        AppendDataBoundItems="true">
+                                        <%--<asp:ListItem Text="My Current Branch" Value="0"></asp:ListItem>--%>
+                                    </asp:DropDownList>
+                                    <asp:RequiredFieldValidator ID="RequiredFieldValidatorDeliveryBranch" runat="server"
+                                        ControlToValidate="cboDeliveryBranch" ErrorMessage="RequiredFieldValidator">*</asp:RequiredFieldValidator>
+                                    <asp:SqlDataSource ID="SqlDataSource_DeliveryBranch" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                                        SelectCommand="SELECT BranchID,BranchName FROM v_BranchAll" SelectCommandType="Text"></asp:SqlDataSource>
+                                </EditItemTemplate>
+                                <ItemStyle Wrap="false" />
+                            </asp:TemplateField>
+
+                            <asp:TemplateField ShowHeader="False" ControlStyle-Width="100px" Visible="true">
+                                <EditItemTemplate>
+                                    <asp:Button ID="cmdUpdate" runat="server" CausesValidation="True" CommandName="Update"
+                                        Text="Update" />
+                                    <asp:ConfirmButtonExtender ID="cmdUpdate_ConfirmButtonExtender" runat="server" ConfirmText="Do you want to Update?"
+                                        Enabled="True" TargetControlID="cmdUpdate"></asp:ConfirmButtonExtender>
+                                    &nbsp;<asp:Button ID="Button2" runat="server" CausesValidation="False" CommandName="Cancel"
+                                        Text="Cancel" />
+                                </EditItemTemplate>
+                                <ItemTemplate>
+                                    <asp:Button ID="Button1" runat="server" CausesValidation="False" CommandName="Edit"
+                                        Text="Edit" />
+                                </ItemTemplate>
+                                <ControlStyle Width="100px" />
+                            </asp:TemplateField>
+                        </Fields>
+                        <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                        <AlternatingRowStyle BackColor="White" />
+                    </asp:DetailsView>
+                </div>
+            </asp:Panel>
+            <asp:SqlDataSource ID="SqlDataSource2" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="s_CardReissue_Single_Browse" SelectCommandType="StoredProcedure" UpdateCommand="s_CardReissue_Delivery_Branch_Update"
+                UpdateCommandType="StoredProcedure" OnUpdated="SqlDataSource2_Updated">
+                <SelectParameters>
+                    <asp:ControlParameter ControlID="GridView1" Name="ID" PropertyName="SelectedValue" Type="Int32" />
+                </SelectParameters>
+                <UpdateParameters>
+                    <asp:Parameter Name="ID" />                    
+                    <asp:Parameter Name="DeliveryOverwrite" />
+                    <asp:SessionParameter Name="Emp" SessionField="EMPID" />
+                    <asp:Parameter Name="Msg" Type="String" Direction="InputOutput" DefaultValue="" Size="250" />
+                </UpdateParameters>
+            </asp:SqlDataSource>
+
+        </ContentTemplate>
+    </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false"
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif"
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

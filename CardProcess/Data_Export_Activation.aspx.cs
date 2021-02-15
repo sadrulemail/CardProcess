@@ -1,0 +1,419 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Data.SqlClient;
+using OfficeOpenXml;
+using System.IO;
+using SocialExplorer.IO.FastDBF;
+using System.Net;
+
+public partial class Data_Export_Activation : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+        if (!TrustControl1.isRole("ADMIN"))
+        {
+            if (Session["DEPTID"].ToString() != "7" || Session["DEPTID"].ToString() != "35")    //Not IT & Cards
+            {
+                Response.Write("No Permission.<br><br><a href=''>Home</a>");
+                Response.End();
+            }
+        }
+        if (!IsPostBack)
+        {
+            SetDate_Today();
+            RefreshControls();
+        }
+        Title = "Card Activation Data Export to ITCL";
+
+        if (!IsPostBack && !string.IsNullOrEmpty(Request.QueryString["batch"]) && !string.IsNullOrEmpty(Request.QueryString["type"]))
+        {
+            string FileName = Path.GetTempFileName();
+            string BatchID = Request.QueryString["batch"].ToString();
+
+            if (string.Format("{0}", Request.QueryString["type"]) == "xlsx")
+            {                
+                //string attachment = string.Format("attachment; filename=CARD_Activation_Batch_{0}" + ".csv", BatchID);
+                ////TrustControl1.ClientMsg(GridView1.Rows[0].Cells[1].te()); return;                        
+                //HttpContext.Current.Response.ClearHeaders();
+                //HttpContext.Current.Response.Clear();
+                //HttpContext.Current.Response.ClearContent();
+                //HttpContext.Current.Response.AddHeader("content-disposition", attachment);
+                //HttpContext.Current.Response.ContentType = "application/vnd.xls";
+                //HttpContext.Current.Response.AddHeader("Pragma", "public");
+
+                //HttpContext.Current.Response.Write(getCSV_ReExport(BatchID));
+                //HttpContext.Current.Response.End();
+                try
+                {
+                    //FileName = "C:\\1.xlsx";
+                    FileInfo FI = new FileInfo(FileName);
+                    if (File.Exists(FileName)) File.Delete(FileName);
+                    using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                    {
+                        ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("Cards");
+                        int StartRow = 1;
+
+                        //Adding Title Row
+                        worksheet.Column(1).Width = 25;
+                        worksheet.Column(2).Width = 12;
+                        worksheet.Column(3).Width = 12;
+                        worksheet.Cells["A1:C1"].Style.Font.Bold = true;
+
+
+
+                        //Adding Title Row
+                        worksheet.Cells[StartRow, 1].Value = "PAN";
+                        worksheet.Cells[StartRow, 2].Value = "SIGNSTAT";
+                        worksheet.Cells[StartRow, 3].Value = "CRD_STAT";
+
+
+                        DataView DV = (DataView)SqlDataSourceReExport.Select(DataSourceSelectArguments.Empty);
+                        int R = 0;
+                        for (int r = 1; r < DV.Table.Rows.Count; r++)
+                        {
+                            R = StartRow + r;
+                            worksheet.Cells[R, 1].Value = DV.Table.Rows[r]["CardNumber"].ToString();
+                            worksheet.Cells[R, 2].Value = "4";
+                            worksheet.Cells[R, 3].Value = "1";
+                        }
+
+                        worksheet.Cells["A1:C" + R].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+
+
+                        //Adding Properties
+                        xlPackage.Workbook.Properties.Title = "Card Activation (Batch " + BatchID + ")";
+                        xlPackage.Workbook.Properties.Author = "Ashik Iqbal (www.ashik.info)";
+                        xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                        xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0} ({1})", Session["FULLNAME"], Session["EMAIL"]);
+
+                        xlPackage.Save();
+                    }
+
+
+                    //Reading File Content
+                    byte[] content = File.ReadAllBytes(FileName);
+                    File.Delete(FileName);
+
+                    //Downloading File
+                    Response.Clear();
+                    Response.ClearContent();
+                    Response.ClearHeaders();
+                    Response.ContentType = "application/ms-excel";
+                    Response.AddHeader("Content-Disposition", "attachment;filename=" + "Card_Activation_Batch_" + BatchID + ".xlsx");
+                    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                    Response.BinaryWrite(content);
+                    Response.End();
+
+                }
+                catch (Exception ex)
+                {
+                    TrustControl1.ClientMsg(ex.Message);
+                }
+            }
+            else if (string.Format("{0}", Request.QueryString["type"]) == "dbf")
+            {
+                try
+                {
+                    DbfFile odbf = new DbfFile();
+                    odbf.Open(FileName, FileMode.Create);
+
+                    odbf.Header.AddColumn(new DbfColumn("PAN", DbfColumn.DbfColumnType.Character, 20, 0));
+                    odbf.Header.AddColumn(new DbfColumn("MBR", DbfColumn.DbfColumnType.Number, 3, 0));
+                    odbf.Header.AddColumn(new DbfColumn("SIGNSTAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                    odbf.Header.AddColumn(new DbfColumn("CRD_STAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                    DbfRecord orec = new DbfRecord(odbf.Header);
+
+                    DataView DV = (DataView)SqlDataSourceReExport.Select(DataSourceSelectArguments.Empty);
+                    for (int r = 1; r < DV.Table.Rows.Count; r++)
+                    {
+                        orec[0] = DV.Table.Rows[r]["CardNumber"].ToString();
+                        orec[1] = "0";
+                        orec[2] = "4";
+                        orec[3] = "1";
+                        odbf.Write(orec, true);
+                    }
+                    odbf.Close();
+
+
+                    //Reading File Content
+                    byte[] content = File.ReadAllBytes(FileName);
+                    File.Delete(FileName);
+
+                    //Downloading File
+                    Response.Clear();
+                    Response.ClearContent();
+                    Response.ClearHeaders();
+                    Response.ContentType = "application/octet-stream";
+                    Response.AddHeader("Content-Disposition", "attachment;filename=" + "Card_Activation_Batch_" + BatchID + ".dbf");
+                    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                    Response.BinaryWrite(content);
+                    Response.End();
+                }
+                catch (Exception ex)
+                {
+                    TrustControl1.ClientMsg(ex.Message);
+                }
+            }
+        }
+    }
+    protected void DropDownList1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        RefreshControls();
+    }
+    private void RefreshControls()
+    {
+        DateTime T = DateTime.Now.Date;
+        DateTime S = T;
+        DateTime E = T;
+
+        if (DropDownList1.SelectedItem.Value == "Custom Range")
+        {
+            DropDownList1.BackColor = System.Drawing.Color.Transparent;
+            TextBox1.Enabled = true;
+            TextBox2.Enabled = true;
+        }
+        else
+        {
+            DropDownList1.BackColor = System.Drawing.Color.Yellow;
+
+            switch (DropDownList1.SelectedItem.Value)
+            {
+                case "Today":
+                    SetDate_Today();
+                    break;
+                case "Yesterday":
+                    S = T.AddDays(-1);
+                    E = T.AddDays(-1);
+                    break;
+                case "This Week":
+                    S = T.AddDays(-int.Parse(T.DayOfWeek.ToString("d")));
+                    E = T;
+                    break;
+                case "Last Week":
+                    S = T.AddDays(-7 - int.Parse(T.DayOfWeek.ToString("d")));
+                    E = S.AddDays(6);
+                    break;
+                case "This Month":
+                    S = T.AddDays(-T.Day + 1);
+                    E = T;
+                    break;
+                case "Last Month":
+                    S = (T.AddDays(-T.Day + 1)).AddMonths(-1);
+                    E = T.AddDays(-T.Day);
+                    break;
+                case "This Year":
+                    S = T.AddDays(-T.DayOfYear + 1);
+                    E = T;
+                    break;
+                case "Show All":
+                    S = new DateTime(1900, 1, 1);
+                    E = S;
+                    break;
+            }
+
+            if (S == new DateTime(1900, 1, 1))
+            {
+                TextBox1.Text = "";
+                TextBox2.Text = "";
+            }
+            else
+            {
+                TextBox1.Text = S.ToString("dd/MM/yyyy");
+                TextBox2.Text = E.ToString("dd/MM/yyyy");
+            }
+
+            RefreshLabel();
+
+            GridView1.DataBind();
+
+            TextBox1.Enabled = false;
+            TextBox2.Enabled = false;
+        }
+    }
+    private void RefreshLabel()
+    {
+
+    }
+    private void SetDate_Today()
+    {
+        TextBox1.Text = DateTime.Now.ToString("dd/MM/yyyy");
+        TextBox2.Text = DateTime.Now.ToString("dd/MM/yyyy");
+    }
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void tabContainer_ActiveTabChanged(object sender, EventArgs e)
+    {
+        if (tabContainer.ActiveTabIndex == 0)
+            GridView2.DataBind();
+        else if (tabContainer.ActiveTabIndex == 1)
+            GridView1.DataBind();
+    }
+    private string getCSV_ReExport(string BatchID)
+    {
+        StringBuilder csv = new StringBuilder();
+        DataView dv = (DataView)SqlDataSourceReExport.Select(DataSourceSelectArguments.Empty);
+
+        //csv.Append("\"File ID\",\"File Name\",\"Description\",\"Rack Name\",\"Status\"");
+        //csv.Append(Environment.NewLine);
+
+        for (int i = 0; i < dv.Table.Rows.Count; i++)
+        {
+            csv.Append(dv.Table.Rows[i][0]);
+            csv.Append(Environment.NewLine);
+        }
+        return csv.ToString();
+    }
+
+    private static string SortString(string Branches)
+    {
+        int[] i_Branches;
+        List<int> ints = new List<int>();
+        string[] strings = Branches.Split(',');
+
+        foreach (string s in strings)
+        {
+            int i;
+            if (int.TryParse(s.Trim(), out i))
+            {
+                ints.Add(i);
+            }
+        }
+        i_Branches = ints.ToArray();
+
+        Array.Sort(i_Branches);
+
+        Branches = "";
+        foreach (int s in i_Branches)
+            Branches += "," + s.ToString();
+        if (Branches.Length > 1)
+        {
+            Branches = Branches.Substring(1);
+        }
+        return Branches;
+    }
+
+    private string getCSV()
+    {
+        StringBuilder csv = new StringBuilder();
+        DataView dv = (DataView)SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+
+        //csv.Append("\"File ID\",\"File Name\",\"Description\",\"Rack Name\",\"Status\"");
+        //csv.Append(Environment.NewLine);
+
+        for (int i = 0; i < dv.Table.Rows.Count; i++)
+        {
+            csv.Append(dv.Table.Rows[i][0]);
+            csv.Append(Environment.NewLine);
+        }
+        return csv.ToString();
+    }    
+
+   
+
+    protected void LinkButton2_Click(object sender, EventArgs e)
+    {
+        if (TrustControl1.isRole("ADMIN"))
+        {
+        }
+        else
+        {
+            TrustControl1.ClientMsg("Only Admin can Export Data Files.");
+        }
+    }
+
+   
+    
+    protected void GridView3_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        //TrustControl1.ClientMsg(e.CommandSource.ToString());
+        
+        if (e.CommandName == "CHECK")
+        {            
+            TrustControl1.ClientMsg(e.CommandArgument.ToString());
+        }
+    }
+
+    
+    
+
+    protected void GridView2_DataBound(object sender, EventArgs e)
+    {
+        int Total = 0;
+        try
+        {            
+            for (int i = 0; i < GridView2.Rows.Count; i++)
+            {
+                Total += int.Parse(GridView2.Rows[i].Cells[2].Text);
+            }
+            GridView2.FooterRow.Cells[2].Text = Total.ToString();        
+        }
+        catch (Exception) { }        
+
+        cmdExport.Enabled = Total > 0;
+
+        for (int i = 0; i < GridView2.Rows.Count; i++)
+        {
+            Panel p1 = new Panel();
+            p1.BackColor = System.Drawing.Color.White;
+            p1.BorderColor = System.Drawing.Color.Gray;
+            p1.BorderStyle = BorderStyle.Solid;
+            p1.BorderWidth = Unit.Pixel(1);
+            Panel pn = new Panel();
+            double percentage = (100 * double.Parse(GridView2.Rows[i].Cells[2].Text)) / (double)Total;
+            pn.Width = Unit.Percentage(percentage);
+            GridView2.Rows[i].Cells[3].ToolTip = string.Format("{0:N2}%", percentage);
+            pn.BackColor = System.Drawing.Color.Gray;
+            pn.Controls.Add(new LiteralControl("&nbsp;"));
+            p1.Controls.Add(pn);
+            pn.Style.Add("margin", "1px");
+            GridView2.Rows[i].Cells[3].Controls.Add(p1);
+        }
+    }
+
+    protected void cmdExport_Click1(object sender, EventArgs e)
+    {
+        ////TrustControl1.ClientMsg(hidBranches.Value);
+        ////return;
+                
+        ////TrustControl1.ClientMsg(GridView1.Rows[0].Cells[1].te()); return;
+        //string attachment = string.Format("attachment; filename=CARD_Activation_Batch_{0:dd_MM_yyyy_HH_mm_ss}" + ".csv", DateTime.Now);
+        ////Response.ClearContent();
+        //HttpContext.Current.Response.Clear();
+        //HttpContext.Current.Response.ClearHeaders();
+        //HttpContext.Current.Response.ClearContent();
+        //HttpContext.Current.Response.AddHeader("content-disposition", attachment);
+        //HttpContext.Current.Response.ContentType = "application/vnd.xls";
+        //HttpContext.Current.Response.AddHeader("Pragma", "public");
+
+        //HttpContext.Current.Response.Write(getCSV());
+        //HttpContext.Current.Response.End();       
+        SqlDataSourceReExportActivation.Select(DataSourceSelectArguments.Empty);
+    }
+    protected void SqlDataSource3_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        
+    }
+    protected void SqlDataSourceReExportActivation_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string BatchID = e.Command.Parameters["@BatchNo"].Value.ToString();
+        Literal1.Text = string.Format("Download Batch-{0}: <a href='Data_Export_Activation.aspx?type=xlsx&batch={0}' target='_blank' class='Link'>XLSX</a> | <a href='Data_Export_Activation.aspx?type=dbf&batch={0}' target='_blank' class='Link'>DBF</a>", BatchID);
+        GridView2.DataBind();
+        //Response.Redirect(string.Format("Data_Export_Activation.aspx?batch=", BatchID), false);
+    }
+
+    protected void SqlDataSource2_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblTotalActivation.Visible = e.AffectedRows > 0;
+        string Total = "";
+        Total = e.Command.Parameters["@Total"].Value.ToString();
+        lblTotalActivation.Text = "<b>Total Activation(s):</b>" + Total.ToString();
+    }
+}

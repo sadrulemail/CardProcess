@@ -1,0 +1,142 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+
+public partial class Supplementary_Issue_Request : System.Web.UI.Page
+{
+    string ID = "";
+    string CardType = "";
+    string Msg = "";
+    bool Done = false;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+        if (!IsPostBack)
+        {
+            hidReqAccount.Value = string.Format("{0}", Request.QueryString["acc"]);
+            txtFilter.Text = string.Format("{0}", Request.QueryString["acc"]);            
+            txtFilter.Focus();            
+            if(hidReqAccount.Value.Length>3)
+            {
+                GridView1.DataBind();
+                GridView2.DataBind();
+            }
+        }
+    }
+  
+
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        hidReqAccount.Value = txtFilter.Text.Trim().ToString();
+        Panel22.Visible = true;
+        Response.Redirect(string.Format("Supplementary_Issue_Request.aspx?acc={0}", txtFilter.Text.Trim()), true);
+        //GridView1.DataBind();
+        //GridView2.DataBind();
+    }
+
+    protected void SqlDataSource_Supplementary_Inserted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+         Msg = e.Command.Parameters["@msg"].Value.ToString();
+        //string ID = e.Command.Parameters["@ID"].Value.ToString();
+        Done = (bool)e.Command.Parameters["@Done"].Value;
+        if (Done)
+        {
+            //hidReqID.Value = ID;
+            TrustControl1.ClientMsg(Msg);
+            //DetailsView_Supplementary.ChangeMode(DetailsViewMode.ReadOnly);
+            grdvSupplementary.DataBind();
+            //Response.Redirect(string.Format("Supplementary_Issue_Request.aspx?id={0}",ID),true);
+        }
+        else
+            TrustControl1.ClientMsg(Msg);
+
+
+    }
+    protected void SqlDataSource_Supplementary_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+         Msg = e.Command.Parameters["@msg"].Value.ToString();
+        //string ID = e.Command.Parameters["@ID"].Value.ToString();
+        Done = (bool)e.Command.Parameters["@Done"].Value;
+        if (Done)
+        {
+            TrustControl1.ClientMsg(Msg);
+            //DetailsView_Supplementary.ChangeMode(DetailsViewMode.ReadOnly);
+            //Response.Redirect(string.Format("Supplementary_Issue_Request.aspx?id={0}",ID),true);
+            grdvSupplementary.DataBind();
+        }
+        else
+            TrustControl1.ClientMsg(Msg);
+
+    }
+
+   
+    protected void SqlDataSource_Supplementary_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        bool Done =(bool) e.Command.Parameters["@Done"].Value;
+        TrustControl1.ClientMsg(Msg);
+        if (Done)
+            grdvSupplementary.DataBind();
+        //chkCardReissue.Enabled = true;
+        //chkCardReissue.Checked = false;
+    }
+
+
+
+    protected void cboCardType_DataBound(object sender, EventArgs e)
+    {
+        //string val = ((DropDownList)DetailsView_Supplementary.FindControl("cboServiceType")).SelectedItem.Value;
+        //if (val == "2")    //PIN Reissue
+        //{
+        //    ((DropDownList)DetailsView_Supplementary.FindControl("cboCardType")).Enabled = false;
+        //    ((DropDownList)DetailsView_Supplementary.FindControl("cboCardType")).SelectedIndex = 0;
+        //}
+    }
+    protected void cboCardType_DataBound1(object sender, EventArgs e)
+    {
+        try
+        {
+            foreach (ListItem LI in ((DropDownList)(DetailsView_Supplementary.FindControl("cboCardType"))).Items)
+                LI.Selected = false;
+
+            foreach (ListItem LI in ((DropDownList)(DetailsView_Supplementary.FindControl("cboCardType"))).Items)
+                if (LI.Value == CardType)
+                    LI.Selected = true;
+        }
+        catch (Exception) { }
+    }
+    public bool getIsEditable() { return true; }
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        Panel22.Visible = e.AffectedRows > 0;
+        div2.Visible = e.AffectedRows > 0;
+        //panel3.Visible = e.AffectedRows > 0;
+       
+    }
+    protected void grdvSupplementary_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+    }
+
+    protected void DetailsView_Supplementary_ItemInserted(object sender, DetailsViewInsertedEventArgs e)
+    {
+        if (!Done)
+        {
+            e.KeepInInsertMode = true;
+            TrustControl1.ClientMsg(Msg);
+        }
+    }
+
+    protected void DetailsView_Supplementary_ItemUpdated(object sender, DetailsViewUpdatedEventArgs e)
+    {
+        if (!Done)
+        {
+            e.KeepInEditMode = true;
+            TrustControl1.ClientMsg(Msg);
+        }
+    }
+}

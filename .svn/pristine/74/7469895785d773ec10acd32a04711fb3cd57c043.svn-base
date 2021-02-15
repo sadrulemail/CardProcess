@@ -1,0 +1,89 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="Data_Export_Download.aspx.cs" Inherits="Data_Export_Download" %>
+
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc2" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:GridView ID="GridView1" runat="server" AutoGenerateColumns="False" CssClass="Grid"
+        BackColor="White" BorderColor="#DEDFDE" BorderStyle="Solid" BorderWidth="1px"
+        CellPadding="4" DataSourceID="SqlDataSource1"
+        ForeColor="Black" GridLines="Vertical" Style="font-size: small"
+        AllowSorting="True">
+        <FooterStyle BackColor="#CCCC99" />
+        <RowStyle BackColor="#F7F7DE" />
+        <Columns>
+            <asp:BoundField DataField="ITCLID" HeaderText="ITCLID"
+                SortExpression="ITCLID" />
+            <asp:BoundField DataField="Account" HeaderText="Account"
+                SortExpression="Account" />
+            <asp:BoundField DataField="FIO" HeaderText="FIO"
+                SortExpression="FIO" />
+            <asp:BoundField DataField="Sex" HeaderText="Sex"
+                SortExpression="Sex" />
+            <asp:BoundField DataField="Address" HeaderText="Address"
+                SortExpression="Address" />
+            <asp:BoundField DataField="CellPhone" HeaderText="Cell Phone"
+                SortExpression="CellPhone" />
+            <asp:BoundField DataField="BirthDay" HeaderText="Date of Birth" SortExpression="BirthDay" DataFormatString="{0:dd/MM/yyyy}"
+                ItemStyle-HorizontalAlign="Center">
+                <ItemStyle HorizontalAlign="Left" />
+            </asp:BoundField>
+            <asp:BoundField DataField="BRPART" HeaderText="BR PART"
+                SortExpression="BRPART" />
+            <asp:TemplateField HeaderText="Insert By" ShowHeader="true" InsertVisible="false">
+                <ItemTemplate>
+                    <uc2:EMP ID="EMPCreatedBy" runat="server" Username='<%# Eval("InsertBy") %>' />
+                </ItemTemplate>
+            </asp:TemplateField>
+            <asp:TemplateField HeaderText="Insert On" ShowHeader="true" InsertVisible="false">
+                <ItemTemplate>
+                    <div title='<%# Eval("InsertDT","{0:dddd \ndd, MMMM, yyyy \nh:mm:ss tt}") %>'>
+                        <%# TrustControl1.ToRecentDateTime(Eval("InsertDT"))%>
+                        <time class="timeago time-small-gray" datetime='<%# Eval("InsertDT","{0:yyyy-MM-dd HH:mm:ss}") %>'></time>
+                    </div>
+                </ItemTemplate>
+            </asp:TemplateField>
+
+        </Columns>
+        <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Right" />
+        <SelectedRowStyle BackColor="#CE5D5A" Font-Bold="True" ForeColor="White" />
+        <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+        <AlternatingRowStyle BackColor="White" />
+    </asp:GridView>
+    <asp:Label runat="server" ID="lblMsg" Text="" Visible="false"></asp:Label>
+    <asp:SqlDataSource ID="SqlDataSourceReExport" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+        SelectCommand="sp_ExportToITCL_Offline_CSV" SelectCommandType="StoredProcedure">
+        <SelectParameters>
+            <asp:QueryStringParameter QueryStringField="branches" Name="BranchCodes" Type="String"
+                DefaultValue="*" />
+            <asp:QueryStringParameter QueryStringField="batch" Name="BatchID" Type="Int32" DefaultValue="" />
+        </SelectParameters>
+    </asp:SqlDataSource>
+    <asp:SqlDataSource ID="SqlDataSource1" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+        SelectCommand="sp_ExportToITCL_Offline_xlsx" SelectCommandType="StoredProcedure" OnSelected="SqlDataSource1_Selected">
+        <SelectParameters>
+            <asp:QueryStringParameter QueryStringField="branches" Name="BranchCodes" Type="String"
+                DefaultValue="*" />
+            <asp:QueryStringParameter QueryStringField="batch" Name="BatchID" Type="Int32" />
+        </SelectParameters>
+    </asp:SqlDataSource>
+    <asp:SqlDataSource ID="SqlDataSource3" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+        SelectCommand="sp_ExportToITCL_Offline_xml" SelectCommandType="StoredProcedure" >
+        <SelectParameters>
+            <asp:QueryStringParameter QueryStringField="branches" Name="BranchCodes" Type="String"
+                DefaultValue="*" />
+            <asp:QueryStringParameter QueryStringField="batch" Name="BatchID" Type="Int32" />
+        </SelectParameters>
+    </asp:SqlDataSource>
+    <asp:SqlDataSource ID="SqlDataSource2" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+        SelectCommand="s_card_issue_fee" SelectCommandType="StoredProcedure">
+        <SelectParameters>
+            <asp:QueryStringParameter QueryStringField="batch" Name="Batchno" Type="Int32" />
+        </SelectParameters>
+    </asp:SqlDataSource>
+</asp:Content>

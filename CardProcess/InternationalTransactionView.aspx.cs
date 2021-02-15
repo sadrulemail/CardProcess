@@ -1,0 +1,488 @@
+﻿using System;
+using System.Data;
+using System.IO;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using OfficeOpenXml;
+using SocialExplorer.IO.FastDBF;
+using System.Data.SqlClient;
+using System.Text;
+using System.Configuration;
+
+public partial class InternationalTransactionView : System.Web.UI.Page
+{
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Page.Form.Attributes.Add("enctype", "multipart/form-data");
+        TrustControl1.getUserRoles(); try
+        {
+            this.Title = string.Format("Batch: {0}", Request.QueryString["batchid"]);
+            string batch = Request.QueryString["batchId"].ToString();
+
+            if (Request.QueryString["type"].ToString() == "view")
+            {
+                GridView1.DataBind();
+            }
+            else if (Request.QueryString["type"].ToString() == "xml")
+            {
+                string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+                SqlConnection oConn = new SqlConnection(oConnString);
+                SqlCommand oCommand = new SqlCommand("s_InternationalTransaction_xml", oConn);
+                oCommand.CommandType = CommandType.StoredProcedure;
+                oCommand.Parameters.AddWithValue("Batch", batch);
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                SqlDataAdapter da = new SqlDataAdapter(oCommand);
+
+                DataSet Dss = new DataSet();
+                da.Fill(Dss);
+
+                string FileName = System.IO.Path.GetRandomFileName();
+
+
+                StringBuilder SW = new StringBuilder();
+
+                string line0 = "<?xml version=" + "\"1.0\"" + " encoding=" + "\"UTF-8\"" + " standalone=" + "\"yes\"" + "?>";
+
+                string line1 = "<imc xmlns:xsi=" + "\"http://www.w3.org/2001/XMLSchema-instance" + "\">";
+                SW.Append(line0).AppendLine();
+                SW.Append(line1).AppendLine();
+                foreach (DataRow dr in Dss.Tables[0].Rows)
+                {
+                    string line = dr[0].ToString();
+                    SW.Append(line).AppendLine();
+                }
+                string linelast = "</imc>";
+                SW.Append(linelast).AppendLine();
+
+                //Downloading xml file 
+                string download_file_name = "attachment; filename=OFS" + DateTime.Now.Year + DateTime.Now.ToString("MM") + DateTime.Now.ToString("dd") + DateTime.Now.Hour + DateTime.Now.Minute + ".xml";
+                Response.ClearHeaders();
+                Response.Clear();
+                Response.ClearContent();
+                Response.AddHeader("content-disposition", download_file_name);
+                Response.ContentType = "text/xml";
+                Response.AddHeader("Pragma", "public");
+
+                Response.Write(SW);
+                Response.End();
+            }
+            else if (Request.QueryString["type"].ToString() == "xlsx")
+            {
+
+                string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+                SqlConnection oConn = new SqlConnection(oConnString);
+                SqlCommand oCommand = new SqlCommand("s_InternationalTransaction_Download_xlsx", oConn);
+                oCommand.CommandType = CommandType.StoredProcedure;
+                oCommand.Parameters.AddWithValue("batch", batch);
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                SqlDataAdapter da = new SqlDataAdapter(oCommand);
+
+                DataSet Dss = new DataSet();
+                da.Fill(Dss);
+
+                string FileName = Path.GetTempFileName();
+
+                if (File.Exists(FileName)) File.Delete(FileName);
+                FileInfo FI = new FileInfo(FileName);
+
+                using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                {
+                    ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("International Transaction");
+                    int StartRow = 1;
+                    //Adding Title Row
+                    for (int i = 0; i < Dss.Tables[0].Columns.Count; i++)
+                    {
+
+                        worksheet.Cells[StartRow, i + 1].Value = Dss.Tables[0].Columns[i].ColumnName;
+                        worksheet.Column(i + 1).Width = 20;
+                    }
+                    //worksheet.Column(1).Width = 20;
+                    //worksheet.Column(2).Width = 35;
+                    //worksheet.Column(3).Width = 35;
+                    //worksheet.Column(4).Width = 15;
+
+                    for (int r = 0; r < Dss.Tables[0].Rows.Count; r++)
+                    {
+                        int R = StartRow + r + 1;
+                        for (int i = 0; i < Dss.Tables[0].Columns.Count; i++)
+                        {
+                            if (Dss.Tables[0].Rows[r][i] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, i + 1].Value = Dss.Tables[0].Rows[r][i];
+                                //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                            }
+                            else
+                            {
+                                if (i > 1)
+                                {
+                                    worksheet.Cells[R, i + 1].Value = 0;
+                                }
+                            }
+
+
+                        }
+
+                    }
+                    //worksheet.Cells["A1:D1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    //worksheet.Cells["B1:B"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    //worksheet.Cells["C1:C"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    //worksheet.Cells["D1:D"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                    //worksheet.Cells["A1:D"].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Top;
+                    worksheet.Cells["A1:I1"].Style.Font.Bold = true;
+
+
+                    xlPackage.Workbook.Properties.Title = "International-Transaction";
+                    xlPackage.Workbook.Properties.Author = "Administrator";
+                    xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                    //xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                    xlPackage.Save();
+
+                }
+                //Reading File Content
+                byte[] content = File.ReadAllBytes(FileName);
+                File.Delete(FileName);
+
+                //Downloading File
+                Response.Clear();
+                Response.ClearContent();
+                Response.ClearHeaders();
+                Response.ContentType = "application/xlsx";
+                Response.AddHeader("Content-Disposition", "attachment;filename=" + "International_Transaction" + ".xlsx");
+                Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                Response.BinaryWrite(content);
+                Response.End();
+                return;
+            }
+            else if (Request.QueryString["type"].ToString() == "xlsx2")
+            {
+
+                string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+                SqlConnection oConn = new SqlConnection(oConnString);
+                SqlCommand oCommand = new SqlCommand("s_InternationalTransaction_Download2_xlsx", oConn);
+                oCommand.CommandType = CommandType.StoredProcedure;
+                oCommand.Parameters.AddWithValue("batch", batch);
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                SqlDataAdapter da = new SqlDataAdapter(oCommand);
+
+                DataSet Dss = new DataSet();
+                da.Fill(Dss);
+
+                string FileName = Path.GetTempFileName();
+
+                if (File.Exists(FileName)) File.Delete(FileName);
+                FileInfo FI = new FileInfo(FileName);
+
+                using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                {
+                    ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("International Transaction(Report2)");
+                    int StartRow = 1;
+                    //Adding Title Row
+                    for (int i = 0; i < Dss.Tables[0].Columns.Count; i++)
+                    {
+
+                        worksheet.Cells[StartRow, i + 1].Value = Dss.Tables[0].Columns[i].ColumnName;
+                        worksheet.Column(i + 1).Width = 20;
+                    }
+                    //worksheet.Column(1).Width = 20;
+                    //worksheet.Column(2).Width = 35;
+                    //worksheet.Column(3).Width = 35;
+                    //worksheet.Column(4).Width = 15;
+
+                    for (int r = 0; r < Dss.Tables[0].Rows.Count; r++)
+                    {
+                        int R = StartRow + r + 1;
+                        for (int i = 0; i < Dss.Tables[0].Columns.Count; i++)
+                        {
+                            if (Dss.Tables[0].Rows[r][i] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, i + 1].Value = Dss.Tables[0].Rows[r][i];
+                                //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                            }
+                            else
+                            {
+                                if (i > 1)
+                                {
+                                    worksheet.Cells[R, i + 1].Value = 0;
+                                }
+                            }
+
+
+                        }
+
+                    }
+
+                    worksheet.Cells["A1:I1"].Style.Font.Bold = true;
+
+
+                    xlPackage.Workbook.Properties.Title = "International-Transaction-Report2";
+                    xlPackage.Workbook.Properties.Author = "Sadrul-IT";
+                    xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                    //xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                    xlPackage.Save();
+
+                }
+                //Reading File Content
+                byte[] content = File.ReadAllBytes(FileName);
+                File.Delete(FileName);
+
+                //Downloading File
+                Response.Clear();
+                Response.ClearContent();
+                Response.ClearHeaders();
+                Response.ContentType = "application/xlsx";
+                Response.AddHeader("Content-Disposition", "attachment;filename=" + "International_Transaction_Report2" + ".xlsx");
+                Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                Response.BinaryWrite(content);
+                Response.End();
+                return;
+            }
+            else if (Request.QueryString["type"].ToString() == "xlsx3")
+            {
+
+                string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+                SqlConnection oConn = new SqlConnection(oConnString);
+                SqlCommand oCommand = new SqlCommand("s_InternationalTransaction_BB_Reconcile_Report_Download3_xlsx", oConn);
+                oCommand.CommandType = CommandType.StoredProcedure;
+                oCommand.Parameters.AddWithValue("batch", batch);
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                SqlDataAdapter da = new SqlDataAdapter(oCommand);
+
+                DataSet Dss = new DataSet();
+                da.Fill(Dss);
+
+                string FileName = Path.GetTempFileName();
+
+                if (File.Exists(FileName)) File.Delete(FileName);
+                FileInfo FI = new FileInfo(FileName);
+
+                using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                {
+                    ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("International Transaction Reconcile (Report3)");
+                    int StartRow = 1;
+                    //Adding Title Row
+                    for (int i = 0; i < Dss.Tables[0].Columns.Count; i++)
+                    {
+
+                        worksheet.Cells[StartRow, i + 1].Value = Dss.Tables[0].Columns[i].ColumnName;
+                        worksheet.Column(i + 1).Width = 20;
+                    }
+                    //worksheet.Column(1).Width = 20;
+                    //worksheet.Column(2).Width = 35;
+                    //worksheet.Column(3).Width = 35;
+                    //worksheet.Column(4).Width = 15;
+
+                    for (int r = 0; r < Dss.Tables[0].Rows.Count; r++)
+                    {
+                        int R = StartRow + r + 1;
+                        for (int i = 0; i < Dss.Tables[0].Columns.Count; i++)
+                        {
+                            if (Dss.Tables[0].Rows[r][i] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, i + 1].Value = Dss.Tables[0].Rows[r][i];
+                                //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                            }
+                            else
+                            {
+                                if (i > 1)
+                                {
+                                    worksheet.Cells[R, i + 1].Value = 0;
+                                }
+                            }
+
+
+                        }
+
+                    }
+
+                    worksheet.Cells["A1:I1"].Style.Font.Bold = true;
+
+
+                    xlPackage.Workbook.Properties.Title = "International-Transaction-Reconcile-Report3";
+                    xlPackage.Workbook.Properties.Author = "Sadrul-IT";
+                    xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                    //xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                    xlPackage.Save();
+
+                }
+                //Reading File Content
+                byte[] content = File.ReadAllBytes(FileName);
+                File.Delete(FileName);
+
+                //Downloading File
+                Response.Clear();
+                Response.ClearContent();
+                Response.ClearHeaders();
+                Response.ContentType = "application/xlsx";
+                Response.AddHeader("Content-Disposition", "attachment;filename=" + "International_Transaction_Reconcile _Report3" + ".xlsx");
+                Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                Response.BinaryWrite(content);
+                Response.End();
+                return;
+            }
+        }
+        catch (Exception exx) { TrustControl1.ClientMsg(exx.ToString()); }
+    }
+    protected void SqlDataSource1_Selected(object sender, System.Web.UI.WebControls.SqlDataSourceStatusEventArgs e)
+    {
+        // SqlDataSource6_Selected(sender,e);
+        //SqlDataSource6.DataBind();
+        //lblStatus.Text = string.Format("Total Rows: <b>{0:N0}</b>", e.AffectedRows);
+        //string deleted= string.Format("Total Rows: <b>{0:N0}</b>", e.Command.Parameters["@DeleteCount"]);
+        //TrustControl1.ClientMsg(deleted);
+        //SqlDataSource6.Select(DataSourceSelectArguments.Empty);
+
+    }
+    protected void DetailsView1_ItemInserted(object sender, DetailsViewInsertedEventArgs e)
+    {
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+    protected void DetailsView1_ItemUpdated(object sender, DetailsViewUpdatedEventArgs e)
+    {
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+    protected void DetailsView1_ModeChanged(object sender, EventArgs e)
+    {
+        if (DetailsView1.CurrentMode == DetailsViewMode.ReadOnly)
+            DetailsView1.CellPadding = 1;
+        else
+            DetailsView1.CellPadding = 1;
+        modal.Show();
+    }
+    protected void DetailsView1_DataBound(object sender, EventArgs e)
+    {
+        try
+        {
+            if (TrustControl1.isRole("ADMIN"))
+            {
+                DetailsView1.Fields[DetailsView1.Fields.Count - 1].Visible = true;
+                DetailsView1.Fields[DetailsView1.Fields.Count - 2].Visible = true;
+            }
+        }
+        catch (Exception) { }
+    }
+    protected void GridView1_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_RowEditing(object sender, GridViewEditEventArgs e)
+    {
+        GridView1.Rows[e.NewEditIndex].Focus();
+    }
+    protected void GridView1_RowUpdating(object sender, GridViewUpdateEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_SelectedIndexChanging(object sender, GridViewSelectEventArgs e)
+    {
+        DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+    }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        modal.Show();
+    }
+
+    protected void SqlDataSource1_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(Msg);
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+
+    protected void SqlDataSource1_Inserted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(Msg);
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+
+    protected void SqlDataSource2_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(Msg);
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+
+    protected void SqlDataSource6_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        // lblDeleted.Text = string.Format("Deleted Rows: <b>{0:N0}</b>", e.AffectedRows);
+    }
+
+    protected void GridView1_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        try
+        {
+            string ID = e.CommandArgument.ToString();
+
+            string Type = "Single";
+            if (e.CommandName == "DeleteAll")
+            {
+                Type = "Multiple";
+            }
+            if (e.CommandName == "DeleteAll" || e.CommandName == "Delete1")
+            {
+                string Msg = "";
+                bool done = false;
+
+                using (SqlConnection conn = new SqlConnection())
+                {
+                    string Query = "s_InternationalTransaction_Delete";
+                    conn.ConnectionString = ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.CommandTimeout = 0;
+                        cmd.CommandText = Query;
+                        cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                        cmd.Parameters.Add("@ID", System.Data.SqlDbType.BigInt).Value = ID;
+                        cmd.Parameters.Add("@Type", System.Data.SqlDbType.VarChar).Value = Type;
+                        cmd.Parameters.Add("@Emp", System.Data.SqlDbType.VarChar).Value = Session["EMPID"].ToString();
+                        //cmd.Parameters.Add("@Type", System.Data.SqlDbType.VarChar).Value = Type.ToString();
+
+                        SqlParameter Sql_Msg = new SqlParameter("@Msg", System.Data.SqlDbType.VarChar, 255);
+                        Sql_Msg.Direction = System.Data.ParameterDirection.InputOutput;
+                        Sql_Msg.Value = Msg;
+                        cmd.Parameters.Add(Sql_Msg);
+
+                        //SqlParameter SQL_Done = new SqlParameter("@Done", SqlDbType.Bit);
+                        //SQL_Done.Direction = ParameterDirection.InputOutput;
+                        //SQL_Done.Value = done;
+                        //cmd.Parameters.Add(SQL_Done);
+
+                        cmd.Connection = conn;
+                        conn.Open();
+
+                        cmd.ExecuteNonQuery();
+                        Msg = string.Format("{0}", Sql_Msg.Value);
+                    }
+                }
+                TrustControl1.ClientMsg(Msg);
+                // GridView2.DataBind();
+
+
+            }
+
+        }
+        catch (Exception exx) { TrustControl1.ClientMsg(exx.Message); }
+        GridView1.DataBind();
+        GridView5.DataBind();
+
+    }
+
+}

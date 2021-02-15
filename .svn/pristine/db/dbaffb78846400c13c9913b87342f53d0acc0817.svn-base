@@ -1,0 +1,191 @@
+<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="Branch_Mark.aspx.cs" Inherits="Branch_Mark" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+    <%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc2" %>
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    Branch Location Mark
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:UpdatePanel runat="server" ID="UpdatePanel1">
+        <ContentTemplate>
+            <asp:Button ID="cmdNew" runat="server" Text="Mark New Branch" Width="180px" OnClick="cmdNew_Click" />
+            <asp:DetailsView ID="DetailsView1" runat="server" CssClass="Grid" AutoGenerateRows="False"
+                BackColor="White" BorderColor="#DEDFDE" BorderStyle="Solid" BorderWidth="1px"
+                CellPadding="4" DataKeyNames="ID" DataSourceID="SqlDataSource2" ForeColor="Black"
+                GridLines="Vertical" Style="font-size: small">
+                <FooterStyle BackColor="#CCCC99" />
+                <RowStyle BackColor="#F7F7DE" />
+                <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Right" />
+                <Fields>
+                    <asp:BoundField DataField="ID" HeaderText="ID" ReadOnly="True" SortExpression="ID" InsertVisible="false"
+                        ControlStyle-Width="150px" ItemStyle-Font-Bold="true">
+                        <ControlStyle Width="150px" />
+                    </asp:BoundField>
+                    <asp:TemplateField HeaderText="Location Name" SortExpression="LocationName">
+                        <ItemTemplate>
+                            <%# Eval("LocationName")%>
+                        </ItemTemplate>
+                        <EditItemTemplate>
+                            <asp:DropDownList ID="dboLocationType" runat="server" DataSourceID="SqlDataSource1" SelectedValue='<%# Bind("LocationName") %>'
+                                DataTextField="LocationName" DataValueField="LocationID" AppendDataBoundItems="true">
+                                <%--<asp:ListItem Text="" Value=""></asp:ListItem>--%>
+                            </asp:DropDownList>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator22223453222" runat="server"
+                                ControlToValidate="dboLocationType" ErrorMessage="*" SetFocusOnError="True"></asp:RequiredFieldValidator>
+                        </EditItemTemplate>
+                        <InsertItemTemplate>
+                            <asp:DropDownList ID="dboLocationType" runat="server" DataSourceID="SqlDataSource1" SelectedValue='<%# Bind("LocationName") %>'
+                                DataTextField="LocationName" DataValueField="LocationID" AppendDataBoundItems="true">
+                                <%--<asp:ListItem Text="" Value=""></asp:ListItem>--%>
+                            </asp:DropDownList>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator22223453222" runat="server"
+                                ControlToValidate="dboLocationType" ErrorMessage="*" SetFocusOnError="True"></asp:RequiredFieldValidator>
+                        </InsertItemTemplate>
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Branch Name" SortExpression="BranchName">
+                        <ItemTemplate>
+                            <%# Eval("BranchName")%>
+                        </ItemTemplate>
+                        <EditItemTemplate>
+                            <asp:DropDownList ID="dboBranchName" runat="server" DataSourceID="SqlDataSource3" SelectedValue='<%# Bind("BranchName") %>'
+                                DataTextField="BranchName" DataValueField="BranchID" AppendDataBoundItems="true">
+                                <asp:ListItem Text="" Value=""></asp:ListItem>
+                            </asp:DropDownList>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator2222345223222" runat="server"
+                                ControlToValidate="dboBranchName" ErrorMessage="*" SetFocusOnError="True"></asp:RequiredFieldValidator>
+                        </EditItemTemplate>
+                        <InsertItemTemplate>
+                            <asp:DropDownList ID="dboBranchName" runat="server" DataSourceID="SqlDataSource3" SelectedValue='<%# Bind("BranchName") %>'
+                                DataTextField="BranchName" DataValueField="BranchID" AppendDataBoundItems="true">
+                                <asp:ListItem Text="" Value=""></asp:ListItem>
+                            </asp:DropDownList>
+                            <asp:RequiredFieldValidator ID="RequiredFieldValidator2222345223222" runat="server"
+                                ControlToValidate="dboBranchName" ErrorMessage="*" SetFocusOnError="True"></asp:RequiredFieldValidator>
+                        </InsertItemTemplate>
+                    </asp:TemplateField>
+
+                    <asp:CommandField ShowInsertButton="true" ButtonType="Button" ShowEditButton="True"
+                        ControlStyle-Width="80px">
+                        <ControlStyle Width="80px" />
+                    </asp:CommandField>
+                </Fields>
+                <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                <AlternatingRowStyle BackColor="White" />
+            </asp:DetailsView>
+            <asp:SqlDataSource ID="SqlDataSource2" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                InsertCommand="s_Branch_Location_Mark_Insert_Update" InsertCommandType="StoredProcedure" SelectCommand="SELECT * FROM v_Branch_Location_Mark where ID=@ID)"
+                SelectCommandType="Text" UpdateCommand="s_Branch_Location_Mark_Insert_Update" UpdateCommandType="StoredProcedure"
+                OnInserted="SqlDataSource2_Inserted" OnUpdated="SqlDataSource2_Updated">
+                <SelectParameters>
+                    <asp:ControlParameter ControlID="GridView1" Name="ID" PropertyName="SelectedValue"
+                        Type="String" />
+                </SelectParameters>
+                <UpdateParameters>
+                    <asp:Parameter Name="ID" Type="Int32" Direction="InputOutput" DefaultValue="0" />
+                    <%--<asp:ControlParameter Name="BranchID" ControlID="ctl00$ContentPlaceHolder2$DetailsView1$dboBranchName"
+                        PropertyName="SelectedValue" Type="Int32" />
+                    <asp:ControlParameter Name="LocationType" ControlID="ctl00$ContentPlaceHolder2$DetailsView1$dboLocationType"
+                        PropertyName="SelectedValue" Type="Int32" />--%>
+                    <asp:Parameter Name="BranchName" />
+                    <asp:Parameter Name="LocationName" />
+                    <asp:SessionParameter Name="Emp" SessionField="EMPID" />
+                    <asp:Parameter Name="Done" Type="Boolean" Direction="InputOutput" DefaultValue="false" />
+                    <asp:Parameter Name="Msg" Type="String" Direction="InputOutput" Size="250" />
+                </UpdateParameters>
+                <InsertParameters>
+                     <asp:Parameter Name="ID" Type="Int32" Direction="InputOutput" DefaultValue="0" />
+                    <%--<asp:ControlParameter Name="BranchID" ControlID="ctl00$ContentPlaceHolder2$DetailsView1$dboBranchName"
+                        PropertyName="SelectedValue" Type="Int32" />
+                    <asp:ControlParameter Name="LocationType" ControlID="ctl00$ContentPlaceHolder2$DetailsView1$dboLocationType"
+                        PropertyName="SelectedValue" Type="Int32" />--%>
+                    <asp:Parameter Name="BranchName" />
+                    <asp:Parameter Name="LocationName" />
+                    <asp:SessionParameter Name="Emp" SessionField="EMPID" />
+                    <asp:Parameter Name="Done" Type="Boolean" Direction="InputOutput" DefaultValue="false" />
+                    <asp:Parameter Name="Msg" Type="String" Direction="InputOutput" Size="250" />
+                </InsertParameters>
+            </asp:SqlDataSource>
+            <asp:GridView ID="GridView1" runat="server" AutoGenerateColumns="False" CssClass="Grid"
+                BackColor="White" BorderColor="#DEDFDE" BorderStyle="Solid" BorderWidth="1px"
+                CellPadding="5" DataKeyNames="ID" DataSourceID="SqlDataSource4" ForeColor="Black"
+                GridLines="Vertical" Style="font-size: small" AllowSorting="True" OnSelectedIndexChanged="GridView1_SelectedIndexChanged">
+                <FooterStyle BackColor="#CCCC99" />
+                <RowStyle BackColor="#F7F7DE" VerticalAlign="Top" />
+                <Columns>
+                    <asp:TemplateField ShowHeader="False">
+                        <ItemTemplate>
+                            <asp:LinkButton ID="LinkButton1" runat="server" CausesValidation="False" CommandName="Select"><img src="Images/edit-label.png" width="20" height="20" border="0" /></asp:LinkButton>
+                        </ItemTemplate>
+                        <ItemStyle Font-Bold="True" ForeColor="Blue" />
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="ID" HeaderText="ID" SortExpression="ID" />
+                    <asp:BoundField DataField="BranchID" HeaderText="BranchID" SortExpression="BranchID" />
+                    <asp:TemplateField HeaderText="Branch Name" SortExpression="BranchName" ItemStyle-HorizontalAlign="Left">
+                        <ItemTemplate>
+                            <%# Eval("BranchName")%>
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Left" />
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Branch Address" SortExpression="BranchAddress" ItemStyle-HorizontalAlign="Left">
+                        <ItemTemplate>
+                            <%# Eval("BranchAddress")%>
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Left" />
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Inserted on" SortExpression="InsertDT">
+                        <ItemTemplate>
+                            <div class="time-small" title='<%# Eval("DT", "{0:dddd, dd MMMM yyyy, hh:mm:ss tt}")%>'>
+                                <time class="timeago" datetime='<%# Eval("DT","{0:yyyy-MM-dd HH:mm:ss}") %>'></time>
+                            </div>
+                            <uc2:EMP ID="EMP1" runat="server" Username='<%# Eval("InsertBy") %>' />
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Updated on" SortExpression="UpdateDT">
+                        <ItemTemplate>
+                            <div class="time-small" title='<%# Eval("UpdateDT", "{0:dddd, dd MMMM yyyy, hh:mm:ss tt}")%>'>
+                                <time class="timeago" datetime='<%# Eval("UpdateDT","{0:yyyy-MM-dd HH:mm:ss}") %>'></time>
+                            </div>
+                            <uc2:EMP ID="EMP2" runat="server" Username='<%# Eval("UpdateBY") %>' />
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:TemplateField>
+                    <%--<asp:TemplateField HeaderText="">
+                        <ItemTemplate>
+                            <asp:Button ID="cmdAutorize11111111111" runat="server" Text="Inside Dhaka" CommandName="InsideDhaka"
+                                CommandArgument='<%# Eval("BranchID") %>' ToolTip="Inside Dhaka" />
+                            <asp:ConfirmButtonExtender ID="conAutho3333333333" runat="server" ConfirmText="Do you want to Inside Dhaka?"
+                                TargetControlID="cmdAutorize11111111111"></asp:ConfirmButtonExtender>
+                        </ItemTemplate>
+                    </asp:TemplateField>--%>
+                </Columns>
+                <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Right" />
+                <SelectedRowStyle BackColor="#FFA200" />
+                <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                <AlternatingRowStyle BackColor="White" />
+            </asp:GridView>
+            <asp:SqlDataSource ID="SqlDataSource1" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="SELECT * FROM Branch_Location_Type"></asp:SqlDataSource>
+            <asp:SqlDataSource ID="SqlDataSource3" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="SELECT BranchID ,BranchName  FROM v_BranchOnly"></asp:SqlDataSource>
+            <asp:SqlDataSource ID="SqlDataSource4" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="SELECT * FROM v_Branch_Location_Mark"></asp:SqlDataSource>
+        </ContentTemplate>
+    </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false"
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif"
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

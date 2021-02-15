@@ -1,0 +1,145 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="Search_Reissue_Request.aspx.cs" Inherits="Search_Reissue_Request" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc3" %>
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Src="MyControl.ascx" TagName="MyControl" TagPrefix="uc2" %>
+<%@ Register Assembly="skmControls2" Namespace="skmControls2" TagPrefix="cc1" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    <asp:Label ID="lblTitle" runat="server" Text="Card Service Request"></asp:Label>
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <asp:Panel ID="Panel1" runat="server">
+                <table class="Panel1 ui-corner-all" style="display: inline-block">
+                    <tr>
+                        <td>
+                            <b>Account No./Card No.</b>                       
+                            <asp:TextBox ID="txtSearch" runat="server" placeholder="account/card no" Width="150px"></asp:TextBox>                    
+                            <asp:Button ID="btnSearch" runat="server" Text="Search" Width="80px" CausesValidation="false"
+                                OnClick="btnSearch_Click" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><b>Request Date:</b>                      
+                            <asp:TextBox ID="txtDateFrom" runat="server" Width="80px" CssClass="Date"></asp:TextBox>
+                            <b>to</b>                       
+                            <asp:TextBox ID="txtDateTo" runat="server" Width="80px" CssClass="Date"></asp:TextBox></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <b>Requested Branch:</b>                       
+                            <asp:DropDownList ID="cboBranch" runat="server" AppendDataBoundItems="True" AutoPostBack="True"
+                                DataSourceID="SqlDataSource3" DataTextField="branchname" DataValueField="branchid" OnDataBound="cboBranch_DataBound">
+                                <asp:ListItem Text="All Branch" Value="-1"></asp:ListItem>
+                            </asp:DropDownList>
+                            <asp:SqlDataSource ID="SqlDataSource3" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                                SelectCommand="SELECT  [branchid],[branchname]  FROM [CardData].[dbo].[v_BranchOnly]"
+                                SelectCommandType="Text"></asp:SqlDataSource>
+                            <b>By:</b>                      
+                            <asp:TextBox ID="txtEmp" runat="server" Text="" CssClass="" Width="50px" placeholder="empid"></asp:TextBox>
+                        </td>
+
+                    </tr>
+                </table>
+                <div style="display: inline-block; vertical-align: top;margin-left:10px">
+                    <div class="Panel1 ui-corner-all" >
+                    <b>Service Request ID: </b>
+                    <asp:TextBox ID="txtFilter" runat="server" Width="50px" onfocus="this.select()" placeholder="req id" TabIndex="0"></asp:TextBox>
+                    <asp:Button ID="cmdOK" runat="server" Text="Go" Width="50px" CausesValidation="false"
+                        OnClick="cmdOK_Click" UseSubmitBehavior="false" />
+                    </div><br />
+                    <a href="http://172.22.1.26/blog/3281" target="_blank" class="Link" style="font-size: medium"><b>How to use?</b></a>
+                </div>
+            </asp:Panel>
+            <asp:GridView ID="GridView1" runat="server" BackColor="White" AllowPaging="true" Visible="false"
+                PageSize="15" CssClass="Grid" AllowSorting="true" BorderColor="#DEDFDE" BorderStyle="None"
+                BorderWidth="1px" CellPadding="4" ForeColor="Black" GridLines="Both" AutoGenerateColumns="False"
+                PagerSettings-PageButtonCount="30" DataSourceID="SqlDataSource1" Style="font-size: small; font-family: Arial">
+                <RowStyle BackColor="#F7F7DE" CssClass="Grid" VerticalAlign="Top" />
+                <Columns>
+                    <asp:TemplateField HeaderText="RID" SortExpression="ReqID">
+                        <ItemTemplate>
+                            <a href='New_Reissue_Request.aspx?id=<%# Eval("ReqID") %>' title="View Request" target="_blank" class='<%# int.Parse(Eval("ReqID").ToString()) >0 ? "" : "hide" %>'>
+                                <img src="Images/open.png" /></a>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="CardNumber" HeaderText="Card Number" SortExpression="CardNumber"
+                        ReadOnly="true">
+                        <ItemStyle Font-Bold="true" />
+                    </asp:BoundField>
+                    <asp:BoundField DataField="Account" HeaderText="Account" ReadOnly="true" ItemStyle-HorizontalAlign="Center">
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:BoundField>
+                    
+                    <asp:BoundField DataField="DOB" HeaderText="Date of Birth" ReadOnly="true" DataFormatString="{0:dd/MM/yyyy}"></asp:BoundField>
+                    <asp:BoundField DataField="Address" HeaderText="Address" ReadOnly="true"></asp:BoundField>
+                    <asp:BoundField DataField="Email" HeaderText="Email" ReadOnly="true"></asp:BoundField>
+                    <asp:BoundField DataField="Mobile" HeaderText="Mobile" ReadOnly="true"></asp:BoundField>
+                    <asp:BoundField DataField="SendToProcess" HeaderText="Send To Process" ReadOnly="true"></asp:BoundField>
+                     <asp:BoundField DataField="Fees" HeaderText="Fees" ReadOnly="true" DataFormatString="{0:N2}"></asp:BoundField>
+                    
+
+                    <asp:TemplateField HeaderText="Request By" SortExpression="InsertBy" ItemStyle-HorizontalAlign="Center">
+                        <ItemTemplate>
+                            <uc3:EMP ID="EMP1" Username='<%# Eval("InsertBy") %>' runat="server" />
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Request Date" SortExpression="InsertDT" ItemStyle-Wrap="false"
+                        ItemStyle-HorizontalAlign="Center">
+                        <ItemTemplate>
+                            <span title='<%# Eval("InsertDT", "{0:dddd, dd MMMM yyyy, hh:mm:ss tt}")%>'>
+                                <%# TrustControl1.ToRecentDateTime(Eval("InsertDT"))%></span>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    
+                    <asp:BoundField DataField="ServiceDesc" HeaderText="Service Desc" SortExpression="ServiceDesc" ReadOnly="true" HtmlEncode="false">
+
+                    </asp:BoundField>
+                </Columns>
+                <FooterStyle BackColor="#CCCC99" />
+                <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Left" CssClass="PagerStyle" />
+                <PagerSettings Position="TopAndBottom" Mode="NumericFirstLast" />
+                <SelectedRowStyle BackColor="#CE5D5A" Font-Bold="True" ForeColor="White" />
+                <HeaderStyle BackColor="#6B696B" Font-Bold="false" ForeColor="White" Font-Names="Arial Narrow" />
+                <AlternatingRowStyle BackColor="White" />
+                <EmptyDataTemplate>
+                    <div style="border: solid 1px silver; padding: 10px; background-color: #F6F6F6; width: 500px">
+                        No Request Data Found.
+                    </div>
+                </EmptyDataTemplate>
+                <EditRowStyle BackColor="#C5E2FD" />
+            </asp:GridView>
+            <asp:Label ID="lblStatus" runat="server" Text=""></asp:Label>
+            <asp:SqlDataSource ID="SqlDataSource1" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="s_search_service_request" SelectCommandType="StoredProcedure" OnSelected="SqlDataSource1_Selected">
+                <SelectParameters>
+                    <asp:ControlParameter ControlID="txtSearch" Name="Search" PropertyName="Text" Type="String" DefaultValue="*" />
+                    <asp:ControlParameter ControlID="txtEmp" Name="Emp" PropertyName="Text" Type="String" DefaultValue="*" />
+                    <asp:ControlParameter ControlID="txtDateFrom" Name="DateFrom" PropertyName="Text" DefaultValue="01/01/1900" Type="DateTime" />
+                    <asp:ControlParameter ControlID="txtDateTo" Name="DateTo" PropertyName="Text" Type="DateTime" />
+                    <asp:ControlParameter ControlID="cboBranch" Name="BranchID" PropertyName="SelectedValue"
+                        DefaultValue="-1" />
+                </SelectParameters>
+            </asp:SqlDataSource>
+            
+        </ContentTemplate>
+    </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false"
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif"
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

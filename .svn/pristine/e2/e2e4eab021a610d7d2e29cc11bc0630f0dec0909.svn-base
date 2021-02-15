@@ -1,0 +1,309 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeFile="SettlementBankInsert.aspx.cs" Inherits="SettlementBankInsert" %>
+
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc2" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" Runat="Server">
+ <link href="CSS/StyleSheet.css" rel="stylesheet" type="text/css" />
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" Runat="Server">
+
+   Settlement Bank List
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" Runat="Server">
+<uc1:TrustControl ID="TrustControl1" runat="server" />
+ <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <div >
+                 <asp:DetailsView ID="ItemsDetailsView" runat="server" AutoGenerateRows="False" CssClass="Grid"
+                    BackColor="White" BorderColor="#DEDFDE" BorderStyle="None" BorderWidth="1px"
+                    CellPadding="4" DataKeyNames="ID" DataSourceID="SqlItemsInsert" ForeColor="Black"
+                    GridLines="Vertical"> 
+                     
+                      <FooterStyle BackColor="#CCCC99" />
+                    <RowStyle BackColor="#F7F7DE" VerticalAlign="Middle" />
+                    <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Right" />
+                    <EmptyDataTemplate>
+                        <asp:Button ID="Button3" runat="server" Text="Add New" CommandName="New" Width="100px" />
+                    </EmptyDataTemplate>
+                     <Fields>
+                         <asp:BoundField DataField="ID" HeaderText="ID" InsertVisible="False" 
+                             ReadOnly="True" SortExpression="ID" />
+                      <%--   <asp:TemplateField HeaderText="Item Catagory" SortExpression="CategoryID">
+                            <ItemTemplate>
+                                 <%# Eval("CategoryName")%>
+                             </ItemTemplate>
+                             <EditItemTemplate>
+                                 <asp:DropDownList ID="cmbCategory" runat="server" AppendDataBoundItems="true" 
+                                     SelectedValue='<%# Bind("CategoryID") %>' DataSourceID="SqlItemCategory" 
+                                     DataTextField="Name" DataValueField="ID">
+                                     <asp:ListItem>Select</asp:ListItem>
+                                     </asp:DropDownList>
+                                 <asp:SqlDataSource ID="SqlItemCategory" runat="server" 
+                                     ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>" 
+                                     SelectCommand="SELECT [Name], [ID] FROM [ItemCategory] WHERE ([IsActive] = @IsActive)">
+                                     <SelectParameters>
+                                         <asp:Parameter DefaultValue="True" Name="IsActive" Type="Boolean" />
+                                     </SelectParameters>
+                                 </asp:SqlDataSource>
+                             </EditItemTemplate>
+                             <InsertItemTemplate>
+                                 <asp:DropDownList ID="cmbCategory" runat="server" SelectedValue='<%# Bind("CategoryID") %>'
+                                     DataSourceID="SqlItemCategory" AppendDataBoundItems="true" DataTextField="Name"
+                                     DataValueField="ID">
+                                     <asp:ListItem>Select</asp:ListItem>
+                                 </asp:DropDownList>
+                                       <asp:SqlDataSource ID="SqlItemCategory" runat="server" 
+                                     ConnectionString="<%$ ConnectionStrings:InventoryConnectionString %>" 
+                                     SelectCommand="SELECT [Name], [ID] FROM [ItemCategory] WHERE ([IsActive] = 1)">
+                                     
+                                 </asp:SqlDataSource>
+                             </InsertItemTemplate>
+                         </asp:TemplateField>--%>
+
+                         <asp:CheckBoxField DataField="IsActive" HeaderText="Active" 
+                             SortExpression="IsActive" />
+                              <asp:TemplateField HeaderText="Bank Name" SortExpression="SettlementBankName">
+                             <ItemTemplate>
+                                 <asp:Label ID="Label1" runat="server" Text='<%# Bind("SettlementBankName") %>'></asp:Label>
+                             </ItemTemplate>
+                             <EditItemTemplate>
+                                 <asp:TextBox ID="txtSettlementBankName" runat="server" Text='<%# Bind("SettlementBankName") %>' MaxLength="255" Width="300px"></asp:TextBox>
+                             </EditItemTemplate>
+                             <InsertItemTemplate>
+                                 <asp:TextBox ID="txtSettlementBankName" runat="server" Text='<%# Bind("SettlementBankName") %>' MaxLength="255" Width="300px"></asp:TextBox>
+                             </InsertItemTemplate>
+                         </asp:TemplateField>
+                         <%--<asp:BoundField DataField="SettlementBankName" HeaderText="SettlementBankName" 
+                             SortExpression="SettlementBankName" />--%>
+
+                              <asp:TemplateField HeaderText="Account No" SortExpression="SettlementAccNo">
+                             <ItemTemplate>
+                                 <asp:Label ID="Label2" runat="server" Text='<%# Bind("SettlementAccNo") %>'></asp:Label>
+                             </ItemTemplate>
+                             <EditItemTemplate>
+                                 <asp:TextBox ID="txtSettlementAccNo" runat="server" Text='<%# Bind("SettlementAccNo") %>' MaxLength="255" Width="300px"></asp:TextBox>
+                             </EditItemTemplate>
+                             <InsertItemTemplate>
+                                 <asp:TextBox ID="txtSettlementAccNo" runat="server" Text='<%# Bind("SettlementAccNo") %>' MaxLength="255" Width="300px"></asp:TextBox>
+                             </InsertItemTemplate>
+                         </asp:TemplateField>
+
+                           <asp:TemplateField HeaderText="CBS Account No" SortExpression="SettlementCbsAccNo">
+                             <ItemTemplate>
+                                 <asp:Label ID="Label3" runat="server" Text='<%# Bind("SettlementCbsAccNo") %>'></asp:Label>
+                             </ItemTemplate>
+                             <EditItemTemplate>
+                                 <asp:TextBox ID="txtSettlementCbsAccNo" runat="server" Text='<%# Bind("SettlementCbsAccNo") %>' MaxLength="255" Width="300px"></asp:TextBox>
+                             </EditItemTemplate>
+                             <InsertItemTemplate>
+                                 <asp:TextBox ID="txtSettlementCbsAccNo" runat="server" Text='<%# Bind("SettlementCbsAccNo") %>' MaxLength="255" Width="300px"></asp:TextBox>
+                             </InsertItemTemplate>
+                         </asp:TemplateField>
+                         <%--<asp:BoundField DataField="SettlementAccNo" HeaderText="SettlementAccNo" 
+                             SortExpression="SettlementAccNo" />
+                         <asp:BoundField DataField="SettlementCbsAccNo" HeaderText="SettlementCbsAccNo" 
+                             SortExpression="SettlementCbsAccNo" />
+                         <asp:BoundField DataField="InsertBy" HeaderText="InsertBy" 
+                             SortExpression="InsertBy" />
+                         <asp:BoundField DataField="InsertDT" HeaderText="InsertDT" 
+                             SortExpression="InsertDT" />
+                         <asp:BoundField DataField="UpdateBy" HeaderText="UpdateBy" 
+                             SortExpression="UpdateBy" />
+                         <asp:BoundField DataField="UpdateDT" HeaderText="UpdateDT" 
+                             SortExpression="UpdateDT" />--%>
+                       
+                          <asp:TemplateField ShowHeader="False" ControlStyle-Width="80px">
+                            <ItemTemplate>
+                                <asp:Button ID="Button1" runat="server" CausesValidation="False" CommandName="Edit"
+                                    Text="Edit" />
+                                &nbsp;<asp:Button ID="Button2" runat="server" CausesValidation="False" CommandName="New"
+                                    Text="New" />
+                            </ItemTemplate>
+
+                            <EditItemTemplate>
+                                <asp:Button ID="Button1" runat="server" CausesValidation="True" CommandName="Update"
+                                    Text="Update" />
+                                <asp:ConfirmButtonExtender ID="Button1_ConfirmButtonExtender" runat="server" ConfirmText="Do you want to Update?"
+                                    Enabled="True" TargetControlID="Button1">
+                                </asp:ConfirmButtonExtender>
+                                &nbsp;<asp:Button ID="Button2" runat="server" CausesValidation="False" CommandName="Cancel"
+                                    Text="Cancel" />
+                            </EditItemTemplate>
+
+                            <InsertItemTemplate>
+                                <asp:Button ID="cmdInsert" runat="server" CausesValidation="True" CommandName="Insert"
+                                    Text="Insert" />
+                                <asp:ConfirmButtonExtender ID="Button1_ConfirmButtonExtender" runat="server" ConfirmText="Do you want to Save?"
+                                    Enabled="True" TargetControlID="cmdInsert">
+                                </asp:ConfirmButtonExtender>
+                            </InsertItemTemplate>
+                            <ControlStyle Width="80px" />
+                        </asp:TemplateField>
+
+                     </Fields>
+                      <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                    <AlternatingRowStyle BackColor="White" />
+            </asp:DetailsView>
+            <asp:SqlDataSource ID="SqlItemsInsert" runat="server" 
+                    ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>" 
+                    InsertCommand="S_SettlementNewBankInsertEdit" 
+                    InsertCommandType="StoredProcedure" oninserted="SqlItemsInsert_Inserted" 
+                    onupdated="SqlItemsInsert_Updated" 
+                    SelectCommand="SELECT * FROM SettlementMaping WHERE ID=@ID" 
+                    UpdateCommand="S_SettlementNewBankInsertEdit" 
+                    UpdateCommandType="StoredProcedure">
+                    <SelectParameters>
+                        <asp:ControlParameter ControlID="GdvItemList" Name="ID" 
+                            PropertyName="SelectedValue" />
+                    </SelectParameters>
+
+                    <InsertParameters>
+                        <asp:Parameter Direction="InputOutput" Name="ID" Type="Int32" />
+                        <%--<asp:Parameter Name="CategoryID" Type="Int32" />--%>
+                        <asp:Parameter Name="SettlementBankName" Type="String" />
+                        <asp:Parameter Name="SettlementAccNo" Type="String" />
+                        <asp:Parameter Name="SettlementCbsAccNo" Type="String" />
+                     <%--   <asp:Parameter Name="Description" Type="String" />--%>
+                        <asp:Parameter Name="IsActive" Type="Boolean" />
+                        <asp:SessionParameter Name="ModifiedBy" SessionField="EMPID" Type="String" />
+                        <asp:Parameter DefaultValue="" Direction="InputOutput" Name="Msg" Size="255" 
+                            Type="String" />
+                        <asp:Parameter DefaultValue="false" Direction="InputOutput" Name="Done" 
+                            Type="Boolean" />
+                    </InsertParameters>
+                    
+                    <UpdateParameters>
+                    <%--    <asp:Parameter Direction="ReturnValue" Name="RETURN_VALUE" Type="Int32" />--%>
+                        <asp:Parameter Direction="InputOutput" Name="ID" Type="Int32" />
+                        <%--<asp:Parameter Name="CategoryID" Type="Int32" />--%>
+                        <asp:Parameter Name="SettlementBankName" Type="String" />
+                        <asp:Parameter Name="SettlementAccNo" Type="String" />
+                        <asp:Parameter Name="SettlementCbsAccNo" Type="String" />
+                      <%--  <asp:Parameter Name="Description" Type="String" />--%>
+                        <asp:Parameter Name="IsActive" Type="Boolean" />
+                        <asp:SessionParameter Name="ModifiedBy" SessionField="EMPID" Type="String" />
+                        <asp:Parameter DefaultValue="" Direction="InputOutput" Name="Msg" Size="255" 
+                            Type="String" />
+                        <asp:Parameter DefaultValue="false" Direction="InputOutput" Name="Done" 
+                            Type="Boolean" />
+                    </UpdateParameters>
+                </asp:SqlDataSource>
+            </div>
+
+          
+          
+          
+            
+            <div class="content-start">
+                <asp:GridView ID="GdvItemList" runat="server" CssClass="Grid" 
+                    AllowSorting="True" AutoGenerateColumns="False"
+                    BackColor="White" BorderColor="#DEDFDE" BorderStyle="None" BorderWidth="1px"
+                    CellPadding="4" DataKeyNames="ID" DataSourceID="SqlItemListGrid" ForeColor="Black"
+                    GridLines="Vertical" AllowPaging="True" PageSize="15" PagerSettings-Mode="NumericFirstLast" 
+                    PagerSettings-Position="TopAndBottom" 
+                    onselectedindexchanging="GdvItemList_SelectedIndexChanging">
+                    <PagerSettings Mode="NumericFirstLast" Position="TopAndBottom" PageButtonCount="30" />
+                    <RowStyle BackColor="#F7F7DE" VerticalAlign="Top" />
+                    <Columns>
+                        <asp:CommandField ShowSelectButton="True" />
+                        <asp:BoundField DataField="ID" HeaderText="ID" InsertVisible="False" ReadOnly="True"
+                            SortExpression="ID" ItemStyle-HorizontalAlign="Center">
+                        <ItemStyle HorizontalAlign="Center" />
+                        </asp:BoundField>
+                         <asp:BoundField DataField="SettlementBankName" HeaderText="Bank Name" SortExpression="SettlementBankName" />
+                        <asp:BoundField DataField="SettlementAccNo" HeaderText="AccNo" SortExpression="SettlementAccNo" ItemStyle-Font-Bold="true">
+                        <ItemStyle Font-Bold="True" />
+                        </asp:BoundField>
+                        <asp:BoundField DataField="SettlementCbsAccNo" HeaderText="CbsAccNo" SortExpression="SettlementCbsAccNo" />
+                        <asp:CheckBoxField DataField="IsActive" HeaderText="Active" SortExpression="IsActive"
+                            ItemStyle-HorizontalAlign="Center">
+                        <ItemStyle HorizontalAlign="Center" />
+                        </asp:CheckBoxField>
+                        <asp:TemplateField HeaderText="Insert By">
+                                <ItemTemplate>
+                                    <uc2:EMP ID="EMP1" runat="server" Username='<%# Eval("InsertBy") %>' />
+                                </ItemTemplate>
+                                <ItemStyle Font-Size="X-Small" ForeColor="Gray" HorizontalAlign="Center" />
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Insert On">
+                                <ItemTemplate>
+                                    <span title='<%# Eval("InsertDT", "{0:dddd, dd MMMM yyyy, hh:mm:ss tt}")%>'>
+                                        <%# TrustControl1.ToRecentDateTime(Eval("InsertDT"))%></span>
+                                </ItemTemplate>
+                                <ItemStyle Font-Size="X-Small" ForeColor="Gray" />
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Modify By">
+                                <ItemTemplate>
+                                    <uc2:EMP ID="EMP2" runat="server" Username='<%# Eval("UpdateBy") %>' />
+                                </ItemTemplate>
+                                <ItemStyle Font-Size="X-Small" ForeColor="Gray" HorizontalAlign="Center" />
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Modify On">
+                                <ItemTemplate>
+                                    <span title='<%# Eval("UpdateDT", "{0:dddd, dd MMMM yyyy, hh:mm:ss tt}")%>'>
+                                        <%# TrustControl1.ToRecentDateTime(Eval("UpdateDT"))%></span>
+                                </ItemTemplate>
+                                <ItemStyle Font-Size="X-Small" ForeColor="Gray" />
+                            </asp:TemplateField>
+                       <%-- <asp:BoundField DataField="CategoryID" HeaderText="CategoryID" 
+                            SortExpression="CategoryID">
+                        </asp:BoundField>--%>
+                    </Columns>
+                    <EmptyDataTemplate>
+                        No Data Found
+                    </EmptyDataTemplate>
+                    <FooterStyle BackColor="#CCCC99" />
+                    <PagerStyle HorizontalAlign="Left" CssClass="PagerStyle" />
+                    <SelectedRowStyle BackColor="#FFD24D" />
+                    <HeaderStyle BackColor="#6B696B" ForeColor="White" HorizontalAlign="Center" />
+                    <AlternatingRowStyle BackColor="White" />
+                </asp:GridView>
+                <asp:SqlDataSource ID="SqlItemListGrid" runat="server" 
+                    ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>" 
+                   SelectCommand="select * from SettlementMaping" 
+                    
+                    onselected="SqlItemListGrid_Selected" ProviderName="<%$ ConnectionStrings:CardDataConnectionString.ProviderName %>">
+
+                  <%--  <InsertParameters>
+                        <asp:Parameter Direction="InputOutput" Name="ID" Type="Int32" />
+                        <asp:Parameter Name="CategoryID" Type="Int32" />
+                        <asp:Parameter Name="Name" Type="String" />
+                        <asp:Parameter Name="Description" Type="String" />
+                        <asp:Parameter Name="IsActive" Type="Boolean" />
+                        <asp:Parameter Name="ModifiedBy" Type="String" />
+                        <asp:Parameter Direction="InputOutput" Name="Msg" Type="String" />
+                        <asp:Parameter Direction="InputOutput" Name="Done" Type="Boolean" />
+                    </InsertParameters>
+                    <UpdateParameters>
+                        <asp:Parameter Direction="InputOutput" Name="ID" Type="Int32" />
+                        <asp:Parameter Name="CategoryID" Type="Int32" />
+                        <asp:Parameter Name="Name" Type="String" />
+                        <asp:Parameter Name="Description" Type="String" />
+                        <asp:Parameter Name="IsActive" Type="Boolean" />
+                        <asp:Parameter Name="ModifiedBy" Type="String" />
+                        <asp:Parameter Direction="InputOutput" Name="Msg" Type="String" />
+                        <asp:Parameter Direction="InputOutput" Name="Done" Type="Boolean" />
+                    </UpdateParameters>--%>
+                </asp:SqlDataSource>
+                <br />
+                <asp:Label ID="lblTotal" runat="server" Text=""></asp:Label>
+                <br />
+                
+            </div>
+            
+           
+            </ContentTemplate>
+            </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false" 
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif" 
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

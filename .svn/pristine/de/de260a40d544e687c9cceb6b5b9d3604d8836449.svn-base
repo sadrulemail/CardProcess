@@ -1,0 +1,54 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Data.SqlClient;
+
+public partial class ForwardingPending : System.Web.UI.Page
+{  
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+        Title = "Card Forwarding Receive Pending";
+
+        if (!IsPostBack)
+        {
+            txtFilter.Text = string.Format("{0}", Request.QueryString["batch"]);
+            if (txtFilter.Text.Length > 0)
+            {
+                Title = string.Format("{0}. Forwarding Receive", Request.QueryString["batch"]);
+                lblTitle.Text = string.Format("Card Forwarding Receive at Branch # {0}", Request.QueryString["batch"]);
+            }
+            txtFilter.Focus();
+
+       
+
+            if (Session["BRANCHID"].ToString() == "1")
+            {
+                cboBranch.AppendDataBoundItems = true;
+                Div1.Visible = true;
+            }
+          
+        }        
+    }
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        Response.Redirect("ForwardingPending.aspx?batch=" + txtFilter.Text.Trim(), true);
+    }
+
+    protected void SelectCheckBox_OnCheckedChanged(object sender, EventArgs e)
+    {
+        CheckBox chk = sender as CheckBox;
+
+        if (chk.Checked)
+        {
+            GridViewRow row = (GridViewRow)chk.NamingContainer;             
+        }
+    }
+
+}
+    
+   

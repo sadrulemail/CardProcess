@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<siteMap xmlns="http://schemas.microsoft.com/AspNet/SiteMap-File-1.0" >
+  <siteMapNode>
+   
+    <siteMapNode url="" title="Home" description="" roles="*" >
+      <siteMapNode url="Default.aspx" title="Home" description="" roles="*" />
+      <siteMapNode url="PasswordChange.aspx" title="Change Password" description="" roles="*" />
+      <siteMapNode url="LogOut.aspx" title="Logout" description="" roles="*" />
+    </siteMapNode>
+    <siteMapNode url="" title="New Card" description="" roles="ADMIN,USER" >
+      <siteMapNode url="Card_AddEdit.aspx" title="New Card Request" description="" roles="ADMIN,USER" />
+      <siteMapNode url="NewCardAuth.aspx" title="Card Auth Pending" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Card_Search.aspx" title="Search Card Requests" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Data_Export.aspx" title="Export to ITCL" description="" roles="ADMIN,EXPORT" />
+    </siteMapNode>
+    <siteMapNode url="" title="Sup. Card" description="" roles="ADMIN" BRANCHID="1" >
+      <siteMapNode url="Supplementary_Issue_Request.aspx" title="New Supplementary Card Request" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Supplementary_Search.aspx" title="Supplementary Search" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Supplementary_Export.aspx" title="Supplementary Export" description="" roles="ADMIN,EXPORT" />
+    </siteMapNode>
+    <siteMapNode title="Reissue Card" description="" roles="ADMIN,EXPORT,USER,GUEST" >
+      <siteMapNode url="New_Reissue_Request.aspx" title="New Reissue Request" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="Search_Reissue_Request.aspx" title="Search Reissue Request" description="" roles="ADMIN,USER,GUEST"/>
+      <siteMapNode url="Card_Reissue.aspx" title="Card Reissue Upload" description="" roles="ADMIN,EXPORT"/>
+      <siteMapNode url="Reissue_Export.aspx" title="Reissue Export" description="" roles="ADMIN"/>
+      <siteMapNode url="PIN_Export.aspx" title="PIN Reissue Export" description="" roles="ADMIN"/>
+      <siteMapNode url="CardReissue_stats.aspx" title="Reissue Statistics" description="" roles="ADMIN,USER"/>
+    </siteMapNode>
+     <siteMapNode title="Forwarding" description="" roles="ADMIN,EXPORT,USER,GUEST" >
+      <siteMapNode url="Forwarding2.aspx" title="Forwarding to Branch" description="" roles="ADMIN,UPLOAD" branch="1" dept="7" />
+      <siteMapNode url="ForwardingPending.aspx" title="Forwarding Pending" description="" roles="ADMIN,USER"/>
+       <siteMapNode url="ForwardingReceiveAtBranch.aspx" title="Receive at Branch" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="ForwardingReceive.aspx" title="Forwarding Received" description="" roles="ADMIN,USER,GUEST"/>
+       <siteMapNode url="ForwardingReport.aspx" title="Forwarding Report" description="" roles="ADMIN,USER,GUEST"/>
+     </siteMapNode>    
+    <siteMapNode url="" title="Activation" description="" roles="*" >
+      <siteMapNode url="Card_Activation_Request.aspx" title="New Activation Request" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Card_Activation_Search.aspx" title="Search Activation Requests" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Data_Export_Activation.aspx" title="Activation Data Export" description="" roles="ADMIN,EXPORT" />
+    </siteMapNode>
+    <siteMapNode url="" title="C. Card" description="" roles="*" branch="1">
+      <siteMapNode url="CreditCardEntry.aspx" title="Credit Card Entry" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="CreditCard_Search.aspx" title="Credit Card Search" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="CreditCard_Forwarding.aspx" title="Forwarding Generate" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="CreditCard_ForwardingHistory.aspx" title="Forwarding History" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="CreditCard_Summary.aspx" title="Credit Card Summary" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="CreditCardFeesReverse_Upload.aspx" title="Fees Reverse Upload" description="" roles="ADMIN,USER"/>
+    </siteMapNode>
+    <siteMapNode url="" title="Scoring" description="" roles="*" branch="1">
+      <siteMapNode url="Card_Scoring.aspx" title="Add New Scoring" description="" roles="ADMIN,USER,SCORING"/>
+      <siteMapNode url="Card_Scoring_Browse.aspx" title="Credit Card Scoring" description="" roles="ADMIN,USER,SCORING"/>
+      <siteMapNode url="Card_Scoring_Verify.aspx" title="Verify Card Scoring" description="" roles="ADMIN,USER,SCORING"/>
+    </siteMapNode>    
+    <siteMapNode url="" title="Payment" description="" roles="*" branch="1">
+      <siteMapNode url="Card_Payment.aspx" title="Credit Card Payment Process" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="FxCurrency_Rate.aspx" title="FxCurrency Rate" description="" roles="ADMIN,USER"/>
+    </siteMapNode>    
+    <siteMapNode title="ATM" description="" roles="ADMIN,USER" >
+      <siteMapNode url="Atm_Upload.aspx" title="Atm Cash Load Upload" description="" roles="ADMIN,USER" branch="1" />
+      <siteMapNode url="Atm_Cash_Load.aspx" title="Atm Cash Load" description="" roles="ADMIN,USER"/>
+      <siteMapNode url="Atm_Load_Summary.aspx" title="Atm Load Summary" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Atm_Load_All_Branch_Summary.aspx" title="Branch Load Summary" description="" roles="ADMIN,USER"/>
+    </siteMapNode>
+    <siteMapNode title="NPSB" description="" roles="ADMIN,USER" branch="1" dept="7">
+      <siteMapNode url="NPSB_Upload.aspx" title="NPSB Upload" description="" roles="ADMIN,USER" branch="1" />
+      <siteMapNode url="NPSB_Summary.aspx" title="NPSB Summary" description="" roles="ADMIN,USER" branch="1" />
+      <siteMapNode url="npsb_itcl_DisputeCheck.aspx" title="NPSB_ITCL Dispute" description="" roles="ADMIN,USER" branch="1" />
+      <!--<siteMapNode url="Atm_Cash_Load.aspx" title="Atm Cash Load" description="" roles="ADMIN,USER"/>
+        <siteMapNode url="Atm_Load_Summary.aspx" title="Atm Load Summary" description="" roles="ADMIN,USER" />
+        <siteMapNode url="Atm_Load_All_Branch_Summary.aspx" title="Branch Load Summary" description="" roles="ADMIN,USER"/>-->
+    </siteMapNode>
+    <siteMapNode title="Sattlement" description="" roles="ADMIN,EXPORT" >
+      <siteMapNode url="Sattlement_Upload.aspx" title="File Import/Export" description="" roles="ADMIN,EXPORT"/>
+      <siteMapNode url="SettlementBankInsert.aspx" title="Bank List" description="" roles="ADMIN,EXPORT"/>
+    </siteMapNode>
+    <siteMapNode title="POS" description="" roles="POS" branch="1" dept="7">
+      <siteMapNode url="ReconciliationFile_Upload.aspx" title="Reconciliation File Upload" description="" roles="POS"/>      
+      <siteMapNode url="MerchantSetup.aspx" title="Merchant Setup" description="" roles="POS"/>
+      <siteMapNode url="Pos_Export_Merchant_Amount.aspx" title="" description="" roles="POS"/>
+      <siteMapNode url="Pos_Export_Commission_Amount.aspx" title="" description="" roles="POS"/>
+      <siteMapNode url="Pos_Export_Shifting_Amount.aspx" title="" description="" roles="POS"/>
+      
+      <!--<siteMapNode url="PartySetup.aspx" title="Party Setup" description="" roles="ADMIN,USER"/>-->
+      <!--<siteMapNode url="CardPrefixWiseShadowAccountSetup.aspx" title="Card Prefix Wise Shadow Account Setup" description="" roles="ADMIN,USER"/>-->
+      <!--<siteMapNode url="Export_OnUs_Data.aspx" title="Export On-Us Data" description="" roles="ADMIN,USER"/>
+        <siteMapNode url="Export_ITCL_OffUs_Data.aspx" title="Export ITCL Off-Us Data" description="" roles="ADMIN,USER"/>
+        <siteMapNode url="Export_Visa_OffUs_Data.aspx" title="Export Visa Off-Us Data" description="" roles="ADMIN,USER"/>-->
+      <siteMapNode url="POS_Download_Ready.aspx" title="Download Log" description="" roles="POS"/>
+      <siteMapNode url="POSMerchantReport.aspx" title="Merchant Report" description="" roles="POS"/>
+    </siteMapNode>
+ <siteMapNode url="" title="Priority Pass" description="" roles="*" >     
+    <siteMapNode url="PriorityPassEntry.aspx" title="Card Info Entry" description="" roles="ADMIN,USER" />
+   <siteMapNode url="PriorityPassCardSearch.aspx" title="Search" description="" roles="ADMIN,USER" />
+    <siteMapNode url="PriorityPassTrans.aspx" title="Transaction Entry" description="" roles="ADMIN,USER" />
+  <siteMapNode url="PriorityPassTransAuth.aspx" title="Transaction Auth" description="" roles="ADMIN,USER" />
+   <siteMapNode url="PriorityPassBill.aspx" title="Bill Generate" description="" roles="ADMIN,USER" />
+    </siteMapNode>
+    <siteMapNode url="" title="Reports" description="" roles="*" >
+      <siteMapNode url="Search.aspx" title="Search All Cards" description="" roles="*" />
+      <siteMapNode url="Search_Adv.aspx" title="Advanced Search" description="" roles="*" />
+      <siteMapNode url="VIP_Tours_Browse.aspx" title="VIP Travels" description="" roles="*" branch="1" dept="7" />
+	    <siteMapNode url="InternationalTransaction_Upload.aspx" title="International Transaction" description="" roles="ADMIN,USER,UPLOAD" branch="1" dept="7" />
+      <siteMapNode url="Different_Collection_Branch_Cards.aspx" title="Different Collection Branch" description="" roles="*" branch="1" dept="7" />
+      <siteMapNode url="Different_Forwarding_Branch_Cards.aspx" title="Different Forwarding Branch" description="" roles="*" branch="1" dept="7" />
+      <siteMapNode url="Item_Count.aspx" title="Entry Count" description="" roles="ADMIN,USER" />  
+    <siteMapNode url="CardSummary.aspx" title="Card Summary" description="" roles="ADMIN,USER" />  
+    </siteMapNode>
+    <siteMapNode url="" title="Dispute" description="" roles="ADMIN,USER,GUEST"  >
+      <siteMapNode url="DisputeCheck.aspx" title="Dispute Check" description="" roles="ADMIN,USER" branch="1" dept="7" />
+      <siteMapNode url="Dispute.aspx" title="Dispute Request" description="" roles="ADMIN,USER" />
+      <siteMapNode url="DisputeAuthorize.aspx" title="Dispute Authorize at Branch" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Dispute_Search.aspx" title="Dispute Search" description="" roles="ADMIN,USER,GUEST" />      
+      <siteMapNode url="Dispute_Comments_Search.aspx" title="Dispute Comments Search" description="" roles="ADMIN,USER" branch="1" dept="7" />
+      <siteMapNode url="DiputeApprove.aspx" title="Dispute Approve" description="" roles="ADMIN,USER" branch="1" dept="7" />
+      <siteMapNode url="Dispute_Print_Log_Search.aspx" title="Dispute Print Log" description="" roles="ADMIN,USER" />
+      <siteMapNode url="FloraTraceNoUpdateAtDispute.aspx" title="Flora Trace No Update at Dispute" description="" roles="ADMIN,USER" branch="1" dept="7" />
+      <siteMapNode url="DiputePostingPending.aspx" title="Dispute Posting Pending" description="" roles="ADMIN,USER" />
+      <siteMapNode url="DiputePostingOrder.aspx" title="Dispute Posting Order" description="" roles="ADMIN,USER"  />
+    </siteMapNode>
+    <siteMapNode url="" title="SMS" description="" roles="ADMIN,USER"  >
+      <siteMapNode url="SMS_Alert.aspx" title="SMS Alert" description="SMS Alert" roles="ADMIN,USER"  />
+      <siteMapNode url="Search_SMS_Alert_Request.aspx" title="Search SMS Alert Request" description="Search SMS Alert Request" roles="ADMIN,USER"  />      
+      <siteMapNode url="SMS_Inbox.aspx" title="Inbox" description="" roles="ADMIN,USER" branch="1" />
+      <siteMapNode url="SMS_Sent.aspx" title="Archive Items" description="" roles="ADMIN,USER" branch="1" />
+      <siteMapNode url="SMS_New.aspx" title="Send New" description="" roles="ADMIN,USER" branch="1"/>
+      <siteMapNode url="SMS_Upload.aspx" title="Bulk Send" description="" roles="ADMIN,USER" branch="1" />
+    </siteMapNode>
+    <siteMapNode url="" title="Admin" description="" roles="*" >
+      <siteMapNode url="Upload_Card_No.aspx" title="Data Upload" description="" roles="ADMIN,UPLOAD" />      
+      <siteMapNode url="Card_Mailer.aspx" title="Card Mailer" description="" roles="ADMIN,UPLOAD" />
+      <siteMapNode url="CardMobileEmailAddressParse.aspx" title="Card Mobile Email Parse" description="" roles="ADMIN,UPLOAD" />
+      <siteMapNode url="Flora_Batch.aspx" title="Flora Batch" description="" roles="ADMIN" />
+      <siteMapNode url="Upload_Email.aspx" title="Upload Email Address" description="" roles="ADMIN" branch="1" dept="7" />
+      <siteMapNode url="Email_Add_Edit.aspx" title="Email Address Add Edit" description="" roles="ADMIN" branch="1" dept="7" />
+      <siteMapNode url="Card_Types.aspx" title="Card Types" description="" roles="ADMIN" />
+      <siteMapNode url="Credit_Card_Types.aspx" title="Credit Card Types" description="" roles="ADMIN" />
+      <siteMapNode url="CardTypesMapping.aspx" title="Card Types Mapping" description="" roles="ADMIN" />
+       <siteMapNode url="CardsAnnualFees.aspx" title="Card Fees" description="" roles="ADMIN,USER" />
+      <siteMapNode url="Branch_Mark.aspx" title="Branch Location Mark" description="" roles="ADMIN" />
+      <siteMapNode url="Acc_Types.aspx" title="Account Types" description="" roles="ADMIN" />
+      <siteMapNode url="Undelivered_Card.aspx" title="Undelivered Card" description="" roles="ADMIN" />
+      <siteMapNode url="UndeliverCardMarkLog.aspx" title="Undelivered Log" description="" roles="ADMIN" />
+      <siteMapNode url="App_Users.aspx" title="App Users" description="" roles="ADMIN" />
+    </siteMapNode>
+    <siteMapNode url="" title="Help" description="" roles="*" >
+      <siteMapNode url="SMS_Help.aspx" title="SMS Help" description="" roles="ADMIN,USER" branch="1" dept="7" />
+      <siteMapNode url="http://172.22.1.26/AppVersion.aspx?APPID=19" title="Release Notes" description="" roles="*" target="_blank" />
+    </siteMapNode>
+  </siteMapNode>
+</siteMap>

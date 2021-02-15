@@ -1,0 +1,219 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Text;
+
+public partial class Card_Search : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (!IsPostBack)
+        {
+            txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date.AddDays(-30));
+            txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+        }
+        if (TrustControl1.getUserRoles() == string.Empty)
+            Response.End();
+        GridView1.Visible = IsPostBack;
+
+        Title = "Search Card";
+    }
+
+    protected void GridView1_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        if (e.CommandName == "OPEN")
+        {
+            Response.Redirect("~/Card_AddEdit.aspx?ID=" + e.CommandArgument, true);
+        }
+    }
+    //protected void cboPerPage_SelectedIndexChanged(object sender, EventArgs e)
+    //{
+    //    GridView1.PageSize = 20;
+    //}
+    protected void txtFilter_TextChanged(object sender, EventArgs e)
+    {
+
+    }
+    protected void cboBranch_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        
+    }
+    protected void cboSent_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void cboCardType_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
+    {
+        if (e.Row.RowType == DataControlRowType.DataRow)
+        {
+            string CID = DataBinder.Eval(e.Row.DataItem, "ID").ToString();
+            StringBuilder sb = new StringBuilder();
+
+
+            sb.Append("<div class='filediv'><table class='noborder'>");
+
+            string[] ssss = getExtensionImage(
+                    string.Format("{0}", "jpg"),
+                    CID.ToString(),
+                    "d"
+                );
+
+            sb.Append("<tr class='hoverTr'>");
+
+            sb.Append("<td align='right' class='extlogotd' >");
+
+            if (ssss[(int)FileDetails.LightBox].Length == 0)
+            {
+                sb.Append("<img title='AID:" + CID + "' src='" + ssss[(int)FileDetails.Img] + "' width='" + ssss[(int)FileDetails.Width] + "' class='noborder' />");
+            }
+            else
+            {
+                //sb.Append("<a target='_blank' class='" + ssss[(int)FileDetails.ACSS] + "' href='" + ssss[(int)FileDetails.LightBox] + "'>");
+                sb.Append("<img title='AID:" + CID + "' loadimg=\"" + ssss[(int)FileDetails.LoadImg] + "\" src='" + ssss[(int)FileDetails.Img] + "' width='" + ssss[(int)FileDetails.Width] + "' class='AttachmentThumb' onerror=\"this.src='Images/Error.jpg'\" />");
+                sb.Append("</a>");
+            }
+
+            sb.Append("</td>");
+
+            sb.Append("<td class='extlogotd'>");
+            sb.Append("<b>" + CID + "</b><br /><br><a target='_blank' href='AttachmentCard.ashx?aid=" + CID + "&key=" + "" + "'>Download</a>");
+
+            if (ssss[(int)FileDetails.View].Length > 0)
+                sb.Append("&nbsp;&nbsp;<a target='_blank' href='" + ssss[(int)FileDetails.View] + "' class='link'>View</a>");
+
+            if (ssss[(int)FileDetails.Preview].Length > 0)
+                sb.Append("<div style='margin:10px'><a target='_blank' href='Pdf.aspx?aid=" + CID + "&key=" + "" + "' title='Preview' class='link'><img src='Images/new_window.png' border='0'></a></div></td>");
+            sb.Append("</tr>");
+
+            sb.Append("</table></div>");
+            //((Literal)(e.Row.FindControl("litAttach"))).Text = sb.ToString();
+        }
+        
+    }
+    public string[] getExtensionImage(string Extension, string AID, string FileKey)
+    {
+        string Pre = "Images/ext/";
+        string[] RetVal = new string[12];
+        RetVal[(int)FileDetails.Img] = Pre + "attach.gif";
+        RetVal[(int)FileDetails.Width] = "16px";
+        RetVal[(int)FileDetails.CSS] = "noborder";
+        RetVal[(int)FileDetails.LoadImg] = "";
+        RetVal[(int)FileDetails.ACSS] = "";
+        RetVal[(int)FileDetails.Preview] = "";
+        RetVal[(int)FileDetails.View] = "";
+        RetVal[(int)FileDetails.LightBox] = "";
+
+        switch (Extension.ToUpper().Trim())
+        {
+            case "DOC":
+            case "DOCX":
+                RetVal[(int)FileDetails.Img] = Pre + "doc.gif";
+                break;
+            case "XLS":
+            case "XLSX":
+            case "XLSM":
+            case "XLT":
+            case "XLTX":
+                RetVal[(int)FileDetails.Img] = Pre + "xls.gif";
+                break;
+            case "PPT":
+            case "PPTX":
+            case "PPTM":
+            case "POTX":
+            case "POTM":
+            case "PPS":
+            case "PPSX":
+                RetVal[(int)FileDetails.Img] = Pre + "ppt.gif";
+                break;
+            case "ZIP":
+            case "RAR":
+            case "TAR":
+            case "7ZIP":
+                RetVal[(int)FileDetails.Img] = Pre + "zip.gif";
+                break;
+            case "TXT":
+            case "INI":
+            case "BAT":
+                RetVal[(int)FileDetails.Img] = Pre + "txt.gif";
+                RetVal[(int)FileDetails.View] = string.Format("Attachment.ashx?aid={0}&key={1}&view=yes", AID, FileKey);
+                break;
+            case "PDF":
+                //RetVal[0] = Pre + "pdf.gif";
+                //RetVal[1] = "50px";
+                //break;
+                RetVal[(int)FileDetails.Img] = "Images/loading.gif";
+                RetVal[(int)FileDetails.Width] = "80px";
+                RetVal[(int)FileDetails.CSS] = "AttachmentThumb";
+                RetVal[(int)FileDetails.LoadImg] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&W=160&P=1", AID, FileKey);
+                RetVal[(int)FileDetails.ACSS] = "lightbox";
+                RetVal[(int)FileDetails.View] = string.Format("AttachmentCard.ashx?aid={0}&key={1}&view=yes", AID, FileKey);
+                RetVal[(int)FileDetails.Preview] = string.Format("Pdf.aspx?aid={0}&key={1}", AID, FileKey);
+                RetVal[(int)FileDetails.LightBox] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&P=1&Z=1", AID, FileKey);
+                break;
+            case "JPG":
+            case "JPEG":
+            case "GIF":
+            case "PNG":
+            case "BMP":
+                RetVal[(int)FileDetails.Img] = "Images/loading.gif";
+                RetVal[(int)FileDetails.Width] = "80px";
+                RetVal[(int)FileDetails.CSS] = "AttachmentThumb";
+                RetVal[(int)FileDetails.LoadImg] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&W=160&H=200&R=1", AID, FileKey);
+                RetVal[(int)FileDetails.ACSS] = "lightbox";
+                RetVal[(int)FileDetails.View] = string.Format("AttachmentCard.ashx?aid={0}&key={1}&view=yes", AID, FileKey);
+                RetVal[(int)FileDetails.LightBox] = string.Format("ShowCardImage.ashx?aid={0}&key={1}&Z=0&R=1", AID, FileKey);
+                break;
+            default:
+                RetVal[(int)FileDetails.Img] = Pre + "attach.gif";
+                break;
+        }
+        return RetVal;
+    }
+    enum FileDetails
+    {
+        Img, AID, Name, Size, FileKey, LoadImg, Width, CSS, ACSS, Preview, View, LightBox
+    }
+    public string getLinkImage(object AID, object FileKey, object Extension)
+    {
+        string RetVal = "";
+        RetVal = "ShowCardImage.ashx?aid=" + AID.ToString() + "&key=" + FileKey.ToString() + "&w=60&p=1";
+        return RetVal;
+    }
+
+
+    protected void cboOtherAccounts_SelectedIndexChanged(object sender, EventArgs e)
+    {
+
+    }
+    protected void cboBranch_DataBound(object sender, EventArgs e)
+    {
+        foreach (ListItem i in cboBranch.Items)
+
+            i.Selected = false;
+
+
+        if (Session["BRANCHID"].ToString() != "1")
+        {
+            foreach (ListItem ii in cboBranch.Items)
+            {
+                if (ii.Value == Session["BRANCHID"].ToString())
+                    ii.Selected = true;
+                else
+                    ii.Enabled = false;
+            }
+        }
+
+    }
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblStatus.Text = string.Format("Total Rows: <b>{0:N0}</b>", e.AffectedRows);
+    }
+}

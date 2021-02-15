@@ -1,0 +1,118 @@
+﻿using System;
+using System.Web;
+using System.Web.UI;
+using System.IO;
+
+public partial class Forwarding : System.Web.UI.Page
+{
+    string Type = "";
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+        if (!TrustControl1.isRole("ADMIN"))
+        {
+            if (Session["BRANCHID"].ToString() != "1")    //Not HO
+            {
+                Response.Write("No Permission.<br><br><a href=''>Home</a>");
+                Response.End();
+            }
+        }
+
+        if (!IsPostBack)
+        {
+            CrystalReportViewer1.Visible = true;
+            //TrustControl1.ClientMsg(Session["EMPNAME"].ToString());
+        }
+
+        if (!string.IsNullOrEmpty(Request.QueryString["batch"]))
+        {
+            lblTitle.Text = string.Format("Forwarding of Batch: {0}", Request.QueryString["batch"]);
+            Type = "batch";
+            Panel1.Visible = false;
+            TrustControl1.LoadEmpToSession(false);
+            CrystalReportViewer1.Visible = true;
+
+            SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+
+            CrystalReportSource1.Report.Parameters[0].DefaultValue = Session["EMPNAME"].ToString(); ;
+            CrystalReportSource1.Report.Parameters[1].DefaultValue = Session["DESIGNATION"].ToString();
+            CrystalReportSource1.Report.Parameters[2].DefaultValue = Request.QueryString["batch"].ToString();
+            //CrystalReportSource1.Report.Parameters[2].DefaultValue = hivReference.Value;
+            //CrystalReportSource1.Report.Parameters[3].DefaultValue = string.Format("{0}", Request.QueryString["cardtype"]);
+            //CrystalReportViewer1.DataBind();        
+            //CrystalReportViewer1.Visible = true;
+
+            ExportToPdf();
+            return;
+
+            //ExportToPdf();
+        }
+        else if (!string.IsNullOrEmpty(Request.QueryString["date"]))
+        {
+            lblTitle.Text = "Forwarding of Date " + Request.QueryString["date"].ToString();
+            Type = "date";
+        }
+        else if (!string.IsNullOrEmpty(Request.QueryString["temp"]))
+        {
+            lblTitle.Text = "Forwarding from ITCL Data File";
+            Type = "temp";
+        }
+        lblYear.Text = string.Format("{0:yy}", DateTime.Now);
+    }
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        Panel1.Visible = false;
+        TrustControl1.LoadEmpToSession(false);
+        //TrustControl1.ClientMsg(Session["EMPNAME"].ToString());
+        string EmpName = Session["EMPNAME"].ToString();
+        
+        string Ref = "";
+        if (Type == "batch")
+            Ref = "TBL/HO/DBD/" + txtRef.Text.Trim() + "/" + lblYear.Text.Trim() + " (Batch: " + Request.QueryString["batch"].ToString() + ")";
+        else if (Type == "date")
+            Ref = "TBL/HO/DBD/" + txtRef.Text.Trim() + "/" + lblYear.Text.Trim() + " (Date: " + Request.QueryString["date"].ToString() + ")";
+        else if (Type == "temp")
+            Ref = "TBL/HO/DBD/" + txtRef.Text.Trim() + "/" + lblYear.Text.Trim();
+        hivReference.Value = Ref;
+        SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+
+
+        CrystalReportSource1.Report.Parameters[0].DefaultValue = EmpName;
+        CrystalReportSource1.Report.Parameters[1].DefaultValue = Session["DESIGNATION"].ToString();
+        CrystalReportSource1.Report.Parameters[2].DefaultValue = Ref;
+        CrystalReportSource1.Report.Parameters[3].DefaultValue = string.Format("{0}", Request.QueryString["cardtype"]);
+        CrystalReportSource1.Report.Parameters[4].DefaultValue = Request.QueryString["batch"].ToString();
+        CrystalReportViewer1.DataBind();        
+        CrystalReportViewer1.Visible = true;
+
+        
+    }
+
+    private void ExportToPdf()
+    {
+        try
+        {
+            //ObjectDataSource1.DataBind();
+            //CrystalReportSource1.DataBind();
+            //CrystalReportSource1.ReportDocument.Refresh();
+
+
+            //Output to PDF
+            MemoryStream oStream;
+            oStream = (MemoryStream)CrystalReportSource1.ReportDocument.ExportToStream(
+                CrystalDecisions.Shared.ExportFormatType.PortableDocFormat);
+
+            Response.Clear();
+            Response.ClearContent();
+            Response.ClearHeaders();
+            Response.Buffer = true;
+            Response.ContentType = "application/pdf";
+            Response.AddHeader("Content-Disposition", string.Format("inline;filename=Forwarding.pdf"));
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.BinaryWrite(oStream.ToArray());
+            Response.End();
+        }
+        catch (Exception) { }
+    }
+}

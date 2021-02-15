@@ -1,0 +1,23 @@
+﻿using System;
+using System.Web.UI.WebControls;
+
+public partial class PriorityPassBill : System.Web.UI.Page
+{
+    string Msg = "";
+    bool Done = false;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+        Title = "Priority Pass Bill";
+    }
+    protected void Button1_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblstatus.Visible = e.AffectedRows > 0;
+        lblstatus.Text = string.Format("Total Rows: <b>{0:N0}</b>", e.AffectedRows);
+    }
+}

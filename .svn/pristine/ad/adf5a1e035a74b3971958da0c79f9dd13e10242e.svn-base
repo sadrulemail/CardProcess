@@ -1,0 +1,46 @@
+﻿using System;
+using System.Web.UI.WebControls;
+
+public partial class CardSummary : System.Web.UI.Page
+{
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+
+        if (!IsPostBack)
+        {
+           
+            txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date.AddMonths(-1));
+            txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+        }
+        else
+            GridView1.Visible = true;
+       
+    }  
+    
+    protected void cboBranch_DataBound(object sender, EventArgs e)
+    {
+        foreach (ListItem i in cboBranch.Items)
+            i.Selected = false;
+
+        if (Session["BRANCHID"].ToString() != "1")
+        {
+            foreach (ListItem ii in cboBranch.Items)
+            {
+                if (ii.Value == Session["BRANCHID"].ToString())
+                    ii.Selected = true;
+                else
+                    ii.Enabled = false;
+            }
+        }
+
+    }
+    
+}
+    
+   

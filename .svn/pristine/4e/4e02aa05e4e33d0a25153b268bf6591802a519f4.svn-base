@@ -1,0 +1,416 @@
+﻿using System;
+using System.IO;
+using System.Web.UI.WebControls;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+
+public partial class InternationalTransaction_Upload : System.Web.UI.Page
+{
+
+    decimal trans = 0;
+    decimal comm = 0;
+    decimal payment = 0;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Page.Form.Attributes.Add("enctype", "multipart/form-data");
+        TrustControl1.getUserRoles();
+
+
+        if (!Directory.Exists(Server.MapPath("Upload")))
+        {
+            Directory.CreateDirectory(Server.MapPath("Upload"));
+        }
+        //UploadTempFile = Server.MapPath("Upload/" + Session.SessionID + ".txt");
+
+        //txtEndDate.Enabled = false;
+
+        if (!IsPostBack)
+        {
+            Random R = new Random(DateTime.Now.Millisecond +
+                            DateTime.Now.Second * 1000 +
+                            DateTime.Now.Minute * 60000 +
+                            DateTime.Now.Hour * 3600000);
+
+            txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+            txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+
+
+            HidPageID.Value = string.Format("{0}_{1}", Session.SessionID, R.Next());
+            HidUploadTempFile.Value = Server.MapPath("Upload/" + Session["EMPID"].ToString() + "_InternationalTransaction_" + HidPageID.Value + ".txt");
+
+            Panel2.Visible = false;
+            CleanDatabase();
+        }
+        //Session["SessionID"] = Session.SessionID;
+
+        Title = "International Transaction File Upload";
+    }
+    private void CleanDatabase()
+    {
+
+        string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+        SqlConnection oConn = new SqlConnection(oConnString);
+        string Query = "TRUNCATE TABLE Temp_InternationalTransaction";
+        SqlCommand oCommand = new SqlCommand(Query, oConn);
+        oCommand.CommandType = CommandType.Text;
+        if (oConn.State == ConnectionState.Closed)
+            oConn.Open();
+        oCommand.ExecuteNonQuery();
+
+    }
+
+    protected void FileUpload1_UploadedComplete(object sender, AjaxControlToolkit.AsyncFileUploadEventArgs e)
+    {
+        Session["FILENAME"] = FileUpload1.FileName.Trim();
+        //lblUploadStatus.Text = "Uploaded File: " + FileUpload1.FileName;
+        if (File.Exists(HidUploadTempFile.Value))
+            File.Delete(HidUploadTempFile.Value);
+        FileUpload1.SaveAs(HidUploadTempFile.Value);
+        File.SetCreationTime(HidUploadTempFile.Value, DateTime.Now);
+    }
+
+    private void DeleteOldUploadedFiles()
+    {
+        string[] Files = Directory.GetFiles(Server.MapPath("Upload/"));
+        foreach (string FileName in Files)
+            if (File.GetCreationTime(FileName) < DateTime.Now.AddHours(-1) || FileName.Contains(Session.SessionID))
+                File.Delete(FileName);
+    }
+
+    protected void cmdCheck_Click(object sender, EventArgs e)
+    {
+        Panel1.Visible = false;
+        ParseFile(HidUploadTempFile.Value);
+        DeleteOldUploadedFiles();
+
+
+
+    }
+
+    private void ParseFile(string FileName)
+    {
+
+
+
+
+        //if (trans_cat == "On-Us")
+        //{
+        DataTable dt_InternationalTransaction = new DataTable();
+        dt_InternationalTransaction.Columns.Add("SessionID", typeof(string));
+        dt_InternationalTransaction.Columns.Add("ClientID", typeof(string));
+        dt_InternationalTransaction.Columns.Add("ContractNo", typeof(string));
+        dt_InternationalTransaction.Columns.Add("CardNo", typeof(string));
+        dt_InternationalTransaction.Columns.Add("ClientName", typeof(string));
+        dt_InternationalTransaction.Columns.Add("ClientAddress", typeof(string));
+        dt_InternationalTransaction.Columns.Add("PhoneNo", typeof(string));
+        dt_InternationalTransaction.Columns.Add("MobileNo", typeof(string));
+        dt_InternationalTransaction.Columns.Add("CardType", typeof(string));
+        dt_InternationalTransaction.Columns.Add("PassportNumber", typeof(string));
+        dt_InternationalTransaction.Columns.Add("PreviousPassportNumber", typeof(string));
+        dt_InternationalTransaction.Columns.Add("IssuePlace", typeof(string));
+        dt_InternationalTransaction.Columns.Add("ADSCode", typeof(string));
+        dt_InternationalTransaction.Columns.Add("PurposeCode", typeof(string));
+        dt_InternationalTransaction.Columns.Add("IssueDate", typeof(string));
+        dt_InternationalTransaction.Columns.Add("PassportRenewalDate", typeof(string));
+        dt_InternationalTransaction.Columns.Add("ExpiryDate", typeof(string));
+        dt_InternationalTransaction.Columns.Add("BBApprovalNo", typeof(string));
+        dt_InternationalTransaction.Columns.Add("ApprovalDate", typeof(string));
+        dt_InternationalTransaction.Columns.Add("RMEndDate", typeof(string));
+        dt_InternationalTransaction.Columns.Add("PostingDate", typeof(string));
+        dt_InternationalTransaction.Columns.Add("TransactionDateTime", typeof(string));
+        dt_InternationalTransaction.Columns.Add("TerminalLocation", typeof(string));
+        dt_InternationalTransaction.Columns.Add("TerminalID", typeof(string));
+        dt_InternationalTransaction.Columns.Add("RetailerID", typeof(string));
+        dt_InternationalTransaction.Columns.Add("TerminalName", typeof(string));
+        dt_InternationalTransaction.Columns.Add("SicCode", typeof(string));
+        dt_InternationalTransaction.Columns.Add("AcquirerCurrency", typeof(string));
+        dt_InternationalTransaction.Columns.Add("CurrencyCode", typeof(string));
+        dt_InternationalTransaction.Columns.Add("CountryCode", typeof(string));
+        dt_InternationalTransaction.Columns.Add("TransactionAmount", typeof(string));
+        dt_InternationalTransaction.Columns.Add("EffectedRemittance", typeof(string));
+        dt_InternationalTransaction.Columns.Add("CardLimit", typeof(string));
+        dt_InternationalTransaction.Columns.Add("FCLimitNONSAARC", typeof(string));
+        dt_InternationalTransaction.Columns.Add("FCLimitSAARC", typeof(string));
+        dt_InternationalTransaction.Columns.Add("CategoryOfFC", typeof(string));
+
+
+        string[] lines = System.IO.File.ReadAllLines(FileName);
+
+        string[] filter_line = null;
+
+        foreach (string line in lines)
+        {
+            var cols = line.Split('|');
+
+            //test
+            //string input = "abc][rfd][5][,][.";
+            string[] parts1 = line.Split(new string[] { "|" }, StringSplitOptions.None);
+            string[] parts2 = System.Text.RegularExpressions.Regex.Split(line, @"|");
+
+            //end test
+
+            int dt;
+            if (cols.Length > 10)
+            {
+                if (int.TryParse(cols[1].Trim().ToString(), out dt))
+                {
+                    //filter_line.add
+                    //var colss = line.Split(new string[] { "|" });//, StringSplitOptions.RemoveEmptyEntries);
+                    var colss = line.Split('|');
+                    dt_InternationalTransaction.Rows.Add(HidPageID.Value, colss[1].Trim(),
+                        colss[2].Trim(), colss[3].Trim(), colss[4].Trim(), colss[5].Trim(), colss[6].Trim(),
+                        colss[7].Trim(), colss[8].Trim(), colss[9].Trim(), colss[10].Trim(), colss[11].Trim(),
+                        colss[12].Trim(), colss[13].Trim(), colss[14].Trim(), colss[15].Trim(), colss[16].Trim(),
+                        colss[17].Trim(), colss[18].Trim(), colss[19].Trim(), colss[20].Trim(), colss[21].Trim(),
+                        colss[22].Trim(), colss[23].Trim(), colss[24].Trim(), colss[25].Trim(), colss[26].Trim(),
+                        colss[27].Trim(), colss[28].Trim(), colss[29].Trim(), colss[30].Trim(), (colss[31].Trim().ToString()).Replace("=","").Trim(),
+                        colss[32].Trim(), colss[33].Trim(), colss[34].Trim(), colss[35].Trim());
+                }
+            }
+        }
+
+        if (dt_InternationalTransaction.Rows.Count > 0)
+        {
+            string connString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+
+            // open the destination data
+            using (SqlConnection destinationConnection = new SqlConnection(connString))
+            {
+                // open the connection
+
+                destinationConnection.Open();
+                using (SqlBulkCopy bulkCopy =
+                     new SqlBulkCopy(destinationConnection.ConnectionString,
+                            SqlBulkCopyOptions.TableLock))
+                {
+                    bulkCopy.BulkCopyTimeout = 0;
+                    bulkCopy.DestinationTableName = "Temp_InternationalTransaction";
+                    bulkCopy.WriteToServer(dt_InternationalTransaction);
+
+                }
+            }
+              
+        }
+        else
+            TrustControl1.ClientMsg("Data Not Found");
+        GridView1.DataBind();
+
+        //GridView4.DataBind();
+   
+          
+
+    }
+
+
+    private void RunNonQuery(string Query, string ConnectionStringsName, CommandType commandType)
+    {
+        string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringsName].ConnectionString;
+        SqlConnection oConn = new SqlConnection(oConnString);
+
+        SqlCommand oCommand = new SqlCommand(Query, oConn);
+        oCommand.CommandType = commandType;
+        if (oConn.State == ConnectionState.Closed)
+            oConn.Open();
+        oCommand.ExecuteNonQuery();
+    }
+
+   
+    protected void FileUpload1_UploadedFileError(object sender, AjaxControlToolkit.AsyncFileUploadEventArgs e)
+    {
+
+    }
+
+
+    protected void ObjectDataSource1_Inserting(object sender, ObjectDataSourceMethodEventArgs e)
+    {
+
+    }
+
+
+    protected void cmdClearData_Click(object sender, EventArgs e)
+    {
+        CleanDatabase();
+    }
+
+    protected void cmdUploadAgain_Click(object sender, EventArgs e)
+    {
+        Response.Redirect("~/ReconciliationFile_Upload.aspx", true);
+    }
+
+    protected void ReconciliationSave(object sender, EventArgs e)
+    {
+
+
+
+
+        //    GridView1.Visible = false;
+        //    string constr = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ToString();
+        //    using (SqlConnection con = new SqlConnection(constr))
+        //    {
+        //        using (SqlCommand cmd = new SqlCommand("s_ReconciliationUpload_insert", con))
+        //        {
+        //            //SqlDataAdapter adapt = new SqlDataAdapter("s_ReconciliationUpload_insert", con);
+        //            cmd.CommandType = CommandType.StoredProcedure;
+
+        //            SqlParameter session_id = new SqlParameter("session_id", SqlDbType.VarChar, 500);
+        //            session_id.Value = HidPageID.Value;
+
+        //            SqlParameter end_date = new SqlParameter("end_date", SqlDbType.Date);
+        //            end_date.Value = txtEndDate.Text;
+
+        //            SqlParameter payment_receipt_from_visa = new SqlParameter("@payment_receipt_from_visa", SqlDbType.Decimal);
+        //            SqlParameter payment_receipt_from_visa_Int = new SqlParameter("@payment_receipt_from_visa_Int", SqlDbType.Decimal);
+
+
+        //            SqlParameter sql_Done = new SqlParameter("@Done", SqlDbType.Bit);
+        //            sql_Done.Direction = ParameterDirection.InputOutput;
+        //            sql_Done.Value = false;
+
+        //            SqlParameter sql_Batch = new SqlParameter("@BatchNo", SqlDbType.BigInt);
+        //            sql_Batch.Direction = ParameterDirection.InputOutput;
+        //            sql_Batch.Value = 0;
+
+        //            cmd.Parameters.Add(session_id);
+        //            cmd.Parameters.Add(end_date);
+        //            cmd.Parameters.Add(sql_Done);
+        //            cmd.Parameters.Add(payment_receipt_from_visa);
+        //            cmd.Parameters.Add(payment_receipt_from_visa_Int);
+        //            cmd.Parameters.Add(sql_Batch);
+
+        //            if (con.State == ConnectionState.Closed)
+        //                con.Open();
+
+        //            cmd.ExecuteNonQuery();
+        //            bool Done = (bool)sql_Done.Value;
+        //            Int32 Batch = Convert.ToInt32(sql_Batch.Value);
+
+
+        //            if (!Done)
+        //            {
+        //                TrustControl1.ClientMsg("Invalid Merchant Account Number Found in Upload File");
+        //                //Response.Redirect("~/ReconciliationFile_Upload.aspx", true);
+
+        //                btn_reconciliation_save.Visible = false;
+
+        //            }
+        //            else
+        //            {
+        //                btn_reconciliation_save.Visible = false;
+
+        //                try
+        //                {
+        //                    if (Batch > 0)
+        //                    {
+        //                        using (SqlConnection conn = new SqlConnection(constr))
+        //                        {
+        //                            using (SqlCommand cmdd = new SqlCommand("s_POS_Commission_Calculation_Final", conn))
+        //                            {
+        //                                //SqlDataAdapter adapt = new SqlDataAdapter("s_ReconciliationUpload_insert", con);
+        //                                cmdd.CommandType = CommandType.StoredProcedure;
+
+        //                                SqlParameter sql_BatchNo = new SqlParameter("BatchNo", SqlDbType.BigInt);
+        //                                sql_BatchNo.Value = Batch;
+
+        //                                cmdd.Parameters.Add(sql_BatchNo);
+
+        //                                if (conn.State == ConnectionState.Closed)
+        //                                    conn.Open();
+
+        //                                cmdd.ExecuteNonQuery();
+
+        //                                TrustControl1.ClientMsg("Saved Successfully");
+        //                                // Response.Redirect("ReconciliationFile_Upload.aspx");
+        //                                cmdUploadAgain.Visible = true;
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //                catch (Exception exx)
+        //                {
+        //                    TrustControl1.ClientMsg(exx.Message.ToString());
+        //                }
+        //            }
+        //        }
+        //    }
+        //    GridView2.DataBind();
+
+        //}
+        //catch (Exception ex) { TrustControl1.ClientMsg(ex.Message); }
+        //Response.Redirect("ReconciliationFile_Upload.aspx");
+    }
+    
+    protected void DrDownload(object sender, EventArgs e)
+    {
+        //string sFileName = System.IO.Path.GetRandomFileName();
+        //string sGenName = "Friendly.txt";
+
+        ////YOu could omit these lines here as you may
+        ////not want to save the textfile to the server
+        ////I have just left them here to demonstrate that you could create the text file 
+        //using (System.IO.StreamWriter SW = new System.IO.StreamWriter(
+        //       Server.MapPath("TextFiles/" + sFileName + ".txt")))
+        //{
+        //    SW.WriteLine("sadat");
+        //    SW.Close();
+        //}
+
+        //System.IO.FileStream fs = null;
+        //fs = System.IO.File.Open(Server.MapPath("TextFiles/" +
+        //         sFileName + ".txt"), System.IO.FileMode.Open);
+        //byte[] btFile = new byte[fs.Length];
+        //fs.Read(btFile, 0, Convert.ToInt32(fs.Length));
+        //fs.Close();
+        //Response.AddHeader("Content-disposition", "attachment; filename=" +
+        //                   sGenName);
+        //Response.ContentType = "application/octet-stream";
+        //Response.BinaryWrite(btFile);
+        //Response.End();
+    }
+    
+    protected void GridView2_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        GridViewRow row = GridView2.SelectedRow;
+        //Label lblSL = (Label)row.FindControl("lblSL");
+        //hidSlNo.Value = lblSL.Text;
+        string s = row.Cells[0].Text;
+        
+    }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        //GridView1.SelectedIndex = GridView1.SelectedRow;// +1;
+        
+    }
+    protected void GridView1_SelectedIndexChanging(object sender, GridViewSelectEventArgs e)
+    {
+       // GridView1.PageIndex = e.NewSelectedIndex;
+        //GridView1.DataBind();
+    }
+
+    protected void btnShow_Click(object sender, EventArgs e)
+    {
+        GridView2.DataBind();
+
+    }
+    protected void SqlDataSourceDataUploadLog_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = string.Format("{0}", e.Command.Parameters["@Msg"].Value);
+        TrustControl1.ClientMsg(string.Format("{0}", Msg));
+        GridView2.DataBind();
+    }
+    protected void tabContainer_ActiveTabChanged(object sender, EventArgs e)
+    {
+        if (tabContainer.ActiveTabIndex == 1)
+        {
+            GridView2.DataBind();
+            Panel3.Visible = true;
+        }
+        //else if (tabContainer.ActiveTabIndex == 1)
+        //    GridView1.DataBind();
+    }
+    protected void SqlDataSource3_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        
+    }
+}

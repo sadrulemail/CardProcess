@@ -1,0 +1,122 @@
+﻿using System;
+using System.Web.UI.WebControls;
+
+public partial class ForwardingReceive : System.Web.UI.Page
+{   
+    protected void Page_Load(object sender, EventArgs e)
+    {       
+        TrustControl1.getUserRoles();
+        if (!IsPostBack)
+        { 
+            txtSearch.Focus();        
+            txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date.AddDays(-30));
+            txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+        }
+
+        GridView1.Visible = IsPostBack;
+    }
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void cboBranch_DataBound(object sender, EventArgs e)
+    {
+        foreach (ListItem i in cboBranch.Items)
+
+            i.Selected = false;
+
+
+        if (Session["BRANCHID"].ToString() != "1")
+        {
+            foreach (ListItem ii in cboBranch.Items)
+            {
+                if (ii.Value == Session["BRANCHID"].ToString())
+                    ii.Selected = true;
+                else
+                    ii.Enabled = false;
+            }
+        }
+
+    }
+
+    protected void SqlDataSource2_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        if(e.AffectedRows>0)
+        {
+            lblMsg.Visible = true;
+            lblMsg.Text = "<b>Total Records: </b>" + e.AffectedRows.ToString();
+        }
+        else
+            lblMsg.Visible = false;
+    }
+
+    //protected void GridView1_RowCommand(object sender, GridViewCommandEventArgs e)
+    //{
+    //    string Msg = "";
+    //    bool done = false;
+    //    if (e.CommandName == "Receive")
+    //    {
+    //        // Retrieve the row index stored in the 
+    //        // CommandArgument property.
+    //        int index = Convert.ToInt32(e.CommandArgument);
+
+    //        // Retrieve the row that contains the button 
+    //        // from the Rows collection.
+    //        GridViewRow row = GridView1.Rows[index];
+
+    //        string id = GridView1.Rows[index].Cells[0].Text;
+    //        string Type = GridView1.Rows[index].Cells[8].Text;
+
+    //        string Query = "s_ForwardingReceived_Insert";
+    //        using (SqlConnection conn = new SqlConnection())
+    //        {
+    //            conn.ConnectionString = System.Configuration.ConfigurationManager
+    //                        .ConnectionStrings["CardDataConnectionString"].ConnectionString;
+
+    //            using (SqlCommand cmd = new SqlCommand(Query, conn))
+    //            {
+    //                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+    //                cmd.Parameters.Add("@ID", System.Data.SqlDbType.BigInt).Value = id;
+    //                cmd.Parameters.Add("@RequestType", System.Data.SqlDbType.VarChar, 255).Value = Type;
+    //                cmd.Parameters.Add("@ReceiveBranch", System.Data.SqlDbType.Int).Value = Session["BranchID"];
+    //                cmd.Parameters.Add("@Emp", System.Data.SqlDbType.VarChar).Value = Session["EMPID"].ToString();
+
+    //                SqlParameter SQL_Msg = new SqlParameter("@Msg", SqlDbType.VarChar, 255);
+    //                SQL_Msg.Direction = ParameterDirection.InputOutput;
+    //                SQL_Msg.Value = Msg;
+    //                cmd.Parameters.Add(SQL_Msg);
+
+    //                SqlParameter SQL_Done = new SqlParameter("@Done", SqlDbType.Bit);
+    //                SQL_Done.Direction = ParameterDirection.InputOutput;
+    //                SQL_Done.Value = done;
+    //                cmd.Parameters.Add(SQL_Done);
+
+    //                cmd.Connection = conn;
+    //                conn.Open();
+
+    //                cmd.ExecuteNonQuery();
+
+    //                done = (bool)SQL_Done.Value;
+    //                Msg = string.Format("{0}", SQL_Msg.Value);
+    //                GridView1.DataBind();
+
+    //            }
+    //        }
+    //    }
+
+    //    if (done)
+    //    {
+    //        TrustControl1.ClientMsg(Msg);
+    //        GridView1.DataBind();
+    //    }
+
+
+    //}
+    
+}
+    
+   

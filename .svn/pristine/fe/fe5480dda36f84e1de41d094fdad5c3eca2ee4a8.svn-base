@@ -1,0 +1,270 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="Forwarding2.aspx.cs" Inherits="Forwarding2" %>
+
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc2" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+    <script type="text/javascript">
+        function UploadError() {
+            document.getElementById('ctl00_ContentPlaceHolder2_lblUploadStatus').innerHTML = "File Uploading Error. Please try again.";
+        }
+
+        function UploadComplete(sender, args) {
+            var filename = args.get_fileName();
+            var contentType = args.get_contentType();
+            var text = "Size of " + filename + " is " + args.get_length() + " bytes";
+            if (contentType.length > 0) {
+                text += " and content type is '" + contentType + "'.";
+            }
+            document.getElementById('UploadBtn').style.visibility = "visible";
+            document.getElementById('ctl00_ContentPlaceHolder2_lblUploadStatus').innerHTML = filename + " is successfully uploaded.<br>";
+
+        }
+    </script>
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    <p>
+        Forwarding Letters &amp; Card Mailers</p>
+</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <div id="tabs">
+                <ul>
+                    <li style="display: inline"><a href='#upload'>Upload</a></li><li style="display: inline">
+                        <a href='#history'>History</a></li></ul>
+                <div id="upload">
+                    <asp:Panel ID="Panel1" runat="server">
+                        <div class="SmallFont" style="padding: 7px; width: 300px; background-color: #FFFFB5;
+                            border: solid 1px green; margin: 0px 0px 10px 0px">
+                            To create the Forwarding Letters and Card Mailers, please upload the report file
+                            of ITCL named ''PRIVATE CUSTOMER LIST WITH CARDS'' (*.txt):</div>
+                        <asp:AsyncFileUpload ID="FileUpload1" runat="server" Width="300px" OnUploadedComplete="FileUpload1_UploadedComplete"
+                            ThrobberID="myThrobber" OnClientUploadComplete="UploadComplete" OnClientUploadError="UploadError"
+                            OnUploadedFileError="FileUpload1_UploadedFileError" UploaderStyle="Traditional"
+                            CssClass="AsyncFileUploadField" />
+                        <br />
+                        <asp:Image ImageUrl="~/Images/ajax-loader.gif" ID="myThrobber" runat="server" />
+                        <br />
+                        <asp:Label ID="lblUploadStatus" runat="server" Style="font-size: small; font-weight: 700"
+                            Text="">
+                
+                        </asp:Label><br />
+                        <span style="visibility: hidden" id="UploadBtn">
+                            <asp:Button ID="cmdCheck" runat="server" Text="View Debit Cards" Width="200px" Font-Bold="true"
+                                Height="30px" OnClick="cmdCheck_Click" />
+                            <asp:Button ID="cmdCheckCreditCard" runat="server" Text="View Credit Cards" Width="200px"
+                                Font-Bold="true" Height="30px" OnClick="cmdCheckCreditCard_Click" />
+                        </span>
+                        <br />
+                    </asp:Panel>
+                    <asp:Panel ID="Panel2" runat="server">
+                        <asp:Button ID="cmdUpdate" runat="server" Text="Continue..." Width="200px" Font-Bold="true"
+                            Height="30px" OnClick="cmdUpdate_Click" />
+                        <asp:ConfirmButtonExtender ID="cmdUpdate_ConfirmButtonExtender" runat="server" ConfirmText="Are you sure?"
+                            Enabled="True" TargetControlID="cmdUpdate">
+                        </asp:ConfirmButtonExtender>
+                        <br />
+                        <br />
+                        <asp:Label Font-Bold="true" ID="lblStatus"  runat="server" Text=""></asp:Label>
+                        <br />
+                        <br />
+                    </asp:Panel>
+                    <asp:Panel ID="PanelDeliveryBranchCodeMissing" runat="server">
+                        <div class="BackShade" style="padding: 3px; font-size: medium">
+                            <strong>Delivery Branch Code Missing:</strong></div>
+                        <asp:GridView ID="GridViewDeliveryBranchCodeMissing" runat="server" AutoGenerateColumns="False"
+                            CssClass="Grid" PagerSettings-Mode="NumericFirstLast" PageSize="50" PagerSettings-PageButtonCount="30"
+                            PagerSettings-Position="TopAndBottom" Width="100%" CellPadding="4" DataSourceID="SqlDataSource1"
+                            Style="font-size: small" AllowPaging="True" ForeColor="#333333" GridLines="None">
+                            <PagerSettings PageButtonCount="30" Position="TopAndBottom" />
+                            <RowStyle BackColor="#FFFBD6" ForeColor="#333333" VerticalAlign="Top" />
+                            <Columns>
+                                <asp:BoundField DataField="CardNo" HeaderText="CardNo" SortExpression="CardNo" />
+                                <asp:BoundField DataField="CustomerName" HeaderText="CustomerName" SortExpression="CustomerName" />
+                                <asp:BoundField DataField="AccountNo" HeaderText="AccountNo" SortExpression="AccountNo"
+                                    ItemStyle-Wrap="false">
+                                    <ItemStyle Wrap="False" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="CustomerAddress" HeaderText="CustomerAddress" SortExpression="CustomerAddress" />
+                                <asp:BoundField DataField="DeleveryBranch" HeaderText="DeleveryBranch" ItemStyle-HorizontalAlign="Center"
+                                    SortExpression="DeleveryBranch">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="DeliveryOverwrite" HeaderText="DeliveryOverwrite" ItemStyle-HorizontalAlign="Center"
+                                    SortExpression="DeliveryOverwrite" NullDisplayText="">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="CardStatus" HeaderText="Status" ItemStyle-HorizontalAlign="Center"
+                                    SortExpression="CardStatus">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="ITCLID" HeaderText="ITCLID" ItemStyle-HorizontalAlign="Center"
+                                    SortExpression="ITCLID">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="CreateDT" HeaderText="CreateDT" ItemStyle-HorizontalAlign="Center"
+                                    SortExpression="CreateDT" DataFormatString="{0:dd-MMM-yyyy}" ItemStyle-Wrap="false">
+                                    <ItemStyle HorizontalAlign="Center" Wrap="False" />
+                                </asp:BoundField>
+                                <asp:BoundField DataField="EmpID" HeaderText="EmpID" SortExpression="EmpID" ItemStyle-HorizontalAlign="Center">
+                                    <ItemStyle HorizontalAlign="Center" />
+                                </asp:BoundField>
+                            </Columns>
+                            <FooterStyle BackColor="#990000" ForeColor="White" Font-Bold="True" />
+                            <PagerStyle BackColor="#FFCC66" ForeColor="#333333" HorizontalAlign="Left" CssClass="PagerStyle" />
+                            <SelectedRowStyle BackColor="#FFCC66" Font-Bold="True" ForeColor="Navy" />
+                            <HeaderStyle BackColor="#990000" Font-Bold="True" ForeColor="White" />
+                            <AlternatingRowStyle BackColor="White" />
+                        </asp:GridView>
+                        <asp:SqlDataSource ID="SqlDataSource1" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                            SelectCommand="SELECT * FROM dbo.TempForwarding where EmpID=@EmpID
+and DeleveryBranch is null and DeliveryOverwrite is null" OnSelected="SqlDataSource1_Selected">
+                            <SelectParameters>
+                                <asp:SessionParameter Name="EmpID" SessionField="EMPID" />
+                            </SelectParameters>
+                        </asp:SqlDataSource>
+                        <br />
+                        <br />
+                    </asp:Panel>
+                    <asp:GridView ID="GridView1" runat="server" AllowPaging="True" AutoGenerateColumns="False"
+                        BackColor="White" BorderColor="#E7E7FF" BorderStyle="Solid" BorderWidth="1px"
+                        CellPadding="3" CssClass="Grid" DataSourceID="ObjectDataSource1" PagerSettings-Mode="NumericFirstLast"
+                        PagerSettings-PageButtonCount="30" PagerSettings-Position="TopAndBottom" PageSize="50"
+                        Style="font-size: small">
+                        <RowStyle BackColor="#E7E7FF" ForeColor="#4A3C8C" VerticalAlign="Top" />
+                        <Columns>
+                            <asp:BoundField DataField="CardNo" HeaderText="CardNo" SortExpression="CardNo" />
+                            <asp:BoundField DataField="CustomerName" HeaderText="CustomerName" SortExpression="CustomerName" />
+                            <asp:BoundField DataField="AccountNo" HeaderText="AccountNo" ItemStyle-Wrap="false"
+                                SortExpression="AccountNo">
+                                <ItemStyle Wrap="False" />
+                            </asp:BoundField>
+                            <asp:BoundField DataField="CustomerAddress" HeaderText="CustomerAddress" SortExpression="CustomerAddress" />
+                            <asp:BoundField DataField="DeleveryBranch" HeaderText="DeleveryBranch" ItemStyle-HorizontalAlign="Center"
+                                SortExpression="DeleveryBranch">
+                                <ItemStyle HorizontalAlign="Center" />
+                            </asp:BoundField>
+                            <asp:BoundField DataField="DeliveryOverwrite" HeaderText="DeliveryOverwrite" ItemStyle-HorizontalAlign="Center"
+                                NullDisplayText="" SortExpression="DeliveryOverwrite">
+                                <ItemStyle HorizontalAlign="Center" />
+                            </asp:BoundField>
+                            <asp:BoundField DataField="CardStatus" HeaderText="Status" ItemStyle-HorizontalAlign="Center"
+                                SortExpression="CardStatus">
+                                <ItemStyle HorizontalAlign="Center" />
+                            </asp:BoundField>
+                            <asp:BoundField DataField="ITCLID" HeaderText="ITCLID" ItemStyle-HorizontalAlign="Center"
+                                SortExpression="ITCLID">
+                                <ItemStyle HorizontalAlign="Center" />
+                            </asp:BoundField>
+                            <asp:BoundField DataField="CreateDT" DataFormatString="{0:dd-MMM-yyyy}" HeaderText="CreateDT"
+                                ItemStyle-HorizontalAlign="Center" ItemStyle-Wrap="false" SortExpression="CreateDT">
+                                <ItemStyle HorizontalAlign="Center" Wrap="False" />
+                            </asp:BoundField>
+                            <asp:BoundField DataField="EmpID" HeaderText="EmpID" ItemStyle-HorizontalAlign="Center"
+                                SortExpression="EmpID">
+                                <ItemStyle HorizontalAlign="Center" />
+                            </asp:BoundField>
+                        </Columns>
+                        <FooterStyle BackColor="#B5C7DE" ForeColor="#4A3C8C" />
+                        <PagerStyle BackColor="#E7E7FF" CssClass="PagerStyle" ForeColor="#4A3C8C" HorizontalAlign="Left" />
+                        <SelectedRowStyle BackColor="#738A9C" Font-Bold="True" ForeColor="#F7F7F7" />
+                        <HeaderStyle BackColor="#4A3C8C" Font-Bold="True" ForeColor="#F7F7F7" />
+                        <AlternatingRowStyle BackColor="#F7F7F7" />
+                    </asp:GridView>
+                    <asp:ObjectDataSource ID="ObjectDataSource1" runat="server" DeleteMethod="Delete"
+                        InsertMethod="Insert" OldValuesParameterFormatString="original_{0}" SelectMethod="GetData"
+                        TypeName="DataSet1TableAdapters.TempForwardingTableAdapter" UpdateMethod="Update"
+                        OnSelected="ObjectDataSource1_Selected">
+                        <DeleteParameters>
+                        </DeleteParameters>
+                        <SelectParameters>
+                            <asp:SessionParameter Name="EmpID" SessionField="EMPID" Type="String" />
+                        </SelectParameters>
+                        <InsertParameters>
+                            <asp:Parameter Name="AccountNo" Type="String" />
+                            <asp:Parameter Name="CardNo" Type="String" />
+                            <asp:Parameter Name="CustomerName" Type="String" />
+                            <asp:Parameter Name="DeleveryBranch" Type="Int32" ConvertEmptyStringToNull="true" />
+                            <asp:Parameter Name="CardStatus" Type="String" />
+                            <asp:Parameter Name="EmpID" Type="String" />
+                            <asp:Parameter Name="ITCLID" Type="Int32" />
+                            <asp:Parameter Name="CreateDT" Type="DateTime" />
+                            <asp:Parameter Name="DeliveryRef" Type="String" />
+                            <asp:Parameter Name="DeliveryOverwrite" Type="Int32" ConvertEmptyStringToNull="true" />
+                            <asp:Parameter Name="CustomerAddress" Type="String" />
+                        </InsertParameters>
+                    </asp:ObjectDataSource>
+                </div>
+                <div id="history">
+                    <asp:GridView ID="GridView2" runat="server" AllowPaging="True" CssClass="Grid" EnableSortingAndPagingCallbacks="True"
+                        PageSize="20" PagerSettings-Mode="NumericFirstLast" PagerSettings-Position="TopAndBottom"
+                        Width="800px" AllowSorting="True" AutoGenerateColumns="False" BackColor="White"
+                        BorderColor="#DEDFDE" BorderStyle="Solid" BorderWidth="1px" CellPadding="4" DataKeyNames="ID"
+                        DataSourceID="SqlDataSourceForwardingLog" Style="font-size: small">
+                        <PagerSettings Mode="NumericFirstLast" Position="TopAndBottom" />
+                        <RowStyle BackColor="#F7F7DE" HorizontalAlign="Center" />
+                        <Columns>
+                            <asp:TemplateField HeaderText="" InsertVisible="False" SortExpression="">
+                                <ItemTemplate>
+                                    <a href='Forwarding.aspx?batch=<%# Eval("ID", "{0}") %>&cardtype=<%# Eval("CardType") %>' title="Re-Download"
+                                        target="_blank" class="Link" style="font-weight: bold">
+                                        <img src="Images/download2.png" width="18" height="18" border="0" />
+                                    </a>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="ID" InsertVisible="False" SortExpression="ID">
+                                <ItemTemplate>
+                                    <a href='<%# Eval("ID", "Forwarding_Details.aspx?id={0}") %>' title="View Details"
+                                        target="_blank" class="Link" style="font-weight: bold">
+                                        <%# Eval("ID") %></a>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="Forwarded On" SortExpression="DT" ItemStyle-Wrap="false"
+                                ItemStyle-HorizontalAlign="Center">
+                                <ItemTemplate>
+                                    <span title='<%# Eval("DT", "{0:dddd, \nd MMMM, yyyy \nh:mm:ss tt}")%>'>
+                                        <%# TrustControl1.ToRecentDateTime(Eval("DT"))%></span></ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="About" SortExpression="DT" ItemStyle-Wrap="false"
+                                ItemStyle-HorizontalAlign="Center">
+                                <ItemTemplate>
+                                    <%# TrustControl1.ToRelativeDate((DateTime)Eval("Dt")) %>
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:TemplateField HeaderText="By Emp" SortExpression="EmpID">
+                                <ItemTemplate>
+                                    <uc2:EMP ID="EMP1" runat="server" Username='<%# Eval("EmpID") %>' />
+                                </ItemTemplate>
+                            </asp:TemplateField>
+                            <asp:BoundField DataField="Reference" HeaderText="Reference" SortExpression="Reference"
+                                ItemStyle-HorizontalAlign="Left" />
+                            <asp:BoundField DataField="Total" HeaderText="Total" SortExpression="Total" DataFormatString="{0:N0}" />
+                            <asp:BoundField DataField="CardType" HeaderText="CardType" SortExpression="CardType" />
+                        </Columns>
+                        <FooterStyle BackColor="#CCCC99" />
+                        <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Left" CssClass="PagerStyle" />
+                        <SelectedRowStyle BackColor="#CE5D5A" Font-Bold="True" ForeColor="White" />
+                        <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                        <AlternatingRowStyle BackColor="White" />
+                    </asp:GridView>
+                    <asp:SqlDataSource ID="SqlDataSourceForwardingLog" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                        SelectCommand="SELECT * FROM [ForwardingLog] ORDER BY [ID] DESC"></asp:SqlDataSource>
+                </div>
+                <br />
+        </ContentTemplate>
+    </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false" 
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif" 
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

@@ -1,0 +1,123 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class InternationalTransactionView : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Page.Form.Attributes.Add("enctype", "multipart/form-data");
+        TrustControl1.getUserRoles();
+        this.Title = string.Format("Batch: {0}", Request.QueryString["batchid"]);
+        string batch = Request.QueryString["batchId"].ToString();
+        try
+        {
+            if (Request.QueryString["type"].ToString() == "view")
+            {
+                GridView1.DataBind();
+            }
+            else if (Request.QueryString["type"].ToString() == "xml")
+            {
+                string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+                SqlConnection oConn = new SqlConnection(oConnString);
+                SqlCommand oCommand = new SqlCommand("s_Pos_Download_Batch", oConn);
+                oCommand.CommandType = CommandType.StoredProcedure;
+                oCommand.Parameters.AddWithValue("DownloadBatch", batch);
+                oCommand.Parameters.AddWithValue("Type", "MA");
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                SqlDataAdapter da = new SqlDataAdapter(oCommand);
+                //ds = new DataSet();
+                DataSet Dss = new DataSet();
+                da.Fill(Dss);
+
+                //Start On-Us file processing of 1st download
+
+                string FileName = System.IO.Path.GetRandomFileName();
+                //string sGenName = "Friendly.txt";
+
+                StringBuilder SW = new StringBuilder();            
+
+                string line0 = "AccountNo" + "," + "Amount_tk" + "," + "Dr_Cr" + "," + "Tm_br_code";
+                SW.Append(line0).AppendLine();
+                foreach (DataRow dr in Dss.Tables[0].Rows)
+                {
+                    string line = dr[0].ToString() + "," + dr[1].ToString() + "," + dr[2].ToString() + "," + dr[3].ToString();
+                    SW.Append(line).AppendLine();
+                }
+
+
+                //Downloading File
+                string download_file_name = "attachment; filename=OFS" + DateTime.Now.Year + DateTime.Now.ToString("MM") + DateTime.Now.ToString("dd") + DateTime.Now.Hour + DateTime.Now.Minute + ".txt";
+                Response.ClearHeaders();
+                Response.Clear();
+                Response.ClearContent();
+                Response.AddHeader("content-disposition", download_file_name);
+                Response.ContentType = "text/plain";
+                Response.AddHeader("Pragma", "public");
+
+                Response.Write(SW);
+                Response.End();
+            }
+        }
+        catch(Exception exx) { TrustControl1.ClientMsg(exx.ToString()); }        
+    }
+    protected void SqlDataSource1_Selected(object sender, System.Web.UI.WebControls.SqlDataSourceStatusEventArgs e)
+    {
+        lblStatus.Text = string.Format("Total Rows: <b>{0:N0}</b>", e.AffectedRows);
+    }
+    protected void DetailsView1_ItemInserted(object sender, DetailsViewInsertedEventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void DetailsView1_ItemUpdated(object sender, DetailsViewUpdatedEventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void DetailsView1_ModeChanged(object sender, EventArgs e)
+    {
+        if (DetailsView1.CurrentMode == DetailsViewMode.ReadOnly)
+            DetailsView1.CellPadding = 1;
+        else
+            DetailsView1.CellPadding = 1;
+        modal.Show();
+    }
+    protected void DetailsView1_DataBound(object sender, EventArgs e)
+    {
+        try
+        {
+            if (TrustControl1.isRole("ADMIN"))
+            {
+                DetailsView1.Fields[DetailsView1.Fields.Count - 1].Visible = true;
+                DetailsView1.Fields[DetailsView1.Fields.Count - 2].Visible = true;
+            }
+        }
+        catch (Exception) { }
+    }
+    protected void GridView1_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_RowEditing(object sender, GridViewEditEventArgs e)
+    {
+        GridView1.Rows[e.NewEditIndex].Focus();
+    }
+    protected void GridView1_RowUpdating(object sender, GridViewUpdateEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_SelectedIndexChanging(object sender, GridViewSelectEventArgs e)
+    {
+        DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+    }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        modal.Show();
+    }
+}

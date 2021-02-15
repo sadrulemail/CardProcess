@@ -1,0 +1,707 @@
+﻿using System;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using SD = System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Web.UI;
+
+public partial class Card_AddEdit : System.Web.UI.Page
+{
+    string ID;
+    string LoginID;
+    string FileKey_EmpSign;
+    string UploadTempFile;
+    string ImageName;
+    bool isInfoEditable = true;
+    string UploadPath;
+    string UploadCropFile;
+    int MaxImageSizePx_ToSaveDB;
+    protected void txtAccNo_TextChanged(object sender, EventArgs e)
+    {
+        cmdGetAccount_Click(sender,e);
+    }
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        //Session["CardType"] = "418117060";
+
+        if (TrustControl1.getUserRoles() == string.Empty)
+            Response.End();
+        
+        //TrustControl1.ClientMsg(Session["CardType"].ToString());
+
+        if (!IsPostBack)
+        {
+            Page.Form.Attributes.Add("enctype", "multipart/form-data");
+
+            try
+            {
+                if (!Directory.Exists(Server.MapPath("Upload/"))) Directory.CreateDirectory(Server.MapPath("Upload/"));
+                //Response.Write(UploadTempFile);
+            }
+            catch (Exception) { }
+
+            Session["FILENAME"] = "";
+            Random R = new Random(DateTime.Now.Millisecond +
+                            DateTime.Now.Second * 1000 +
+                            DateTime.Now.Minute * 60000 +
+                            DateTime.Now.Hour * 3600000);
+            hidTime.Value = string.Format("{0}", R.Next());
+
+
+            try
+            {
+                if (string.IsNullOrEmpty(Request.QueryString["ID"]))
+                {
+                    hidID.Value = null;
+                    Session["ID"] = null;
+                    DetailsView1.DefaultMode = DetailsViewMode.Insert;
+                    lblTitle.Text = Title = "New Card Request";
+                }
+                else
+                {
+                    hidID.Value = Request.QueryString["ID"].ToString();
+                    Session["ID"] = hidID.Value;
+                    lblTitle.Text = Title = string.Format("#{0} - Card Request", hidID.Value);
+                }
+            }
+            catch (Exception)
+            {
+                hidID.Value = null;
+                Session["ID"] = null;
+                DetailsView1.DefaultMode = DetailsViewMode.Insert;
+            }
+        }
+
+        try
+        {
+            if (!Directory.Exists(Server.MapPath("Upload/"))) Directory.CreateDirectory(Server.MapPath("Upload/"));
+            ImageName = string.Format("{0}_{1}_{2}.jpg", Session["USERID"], Session.SessionID, hidTime.Value);
+            UploadTempFile = Server.MapPath("Upload/" + ImageName);
+            UploadCropFile = Server.MapPath("Upload/crop_" + ImageName);
+            UploadPath = Server.MapPath("Upload/");
+            //Response.Write(UploadTempFile);
+        }
+        catch (Exception) { }
+
+        if (hidID.Value != "")
+        {
+            if (TrustControl1.isRole("GUEST"))   //Guest User
+            {
+                DetailsView1.Rows[DetailsView1.Rows.Count - 1].Visible = false;
+            }
+        }
+        else if (!TrustControl1.isRole("ADMIN")
+            && !TrustControl1.isRole("USER"))
+        {
+            Response.Write("No Permission.");
+            DetailsView1.Visible = false;
+        }
+
+        SqlConnection.ClearAllPools();
+        this.Form.DefaultFocus = "ctl00_ContentPlaceHolder2_DetailsView1_txtAccNo";        
+    }
+
+    protected void cmdGetAccount_Click(object sender, EventArgs e)
+    {
+        string AccNo = ((TextBox)(DetailsView1.FindControl("txtAccNo"))).Text.Trim();
+
+        try
+        {
+            //string Account = DataBinder.Eval(DetailsView1.DataItem, "Account").ToString();
+            string AccTypes = AccNo.Substring(5, 4);
+            ACType.Value = AccTypes;
+            ((DropDownList)(DetailsView1.FindControl("cboCardType"))).DataBind();
+        }
+        catch (Exception ex) { }
+
+        //modal.Show();
+        if (String.IsNullOrEmpty(AccNo))
+            TrustControl1.ClientMsg("Please Enter A/C Number.");
+        else
+        {
+            string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+            SqlConnection oConn = new SqlConnection(oConnString);
+            if (oConn.State == ConnectionState.Closed) oConn.Open();
+
+            SqlCommand oCommand = new SqlCommand("sp_AccInfo_From_Flora", oConn);
+            oCommand.CommandType = CommandType.StoredProcedure;
+
+            SqlParameter sql_Account = new SqlParameter("Account", SqlDbType.VarChar, 20);
+            sql_Account.Value = AccNo;
+
+            SqlParameter sql_Msg = new SqlParameter("@Msg", SqlDbType.VarChar, 255);
+            sql_Msg.Direction = ParameterDirection.Output;
+
+            SqlParameter sql_Done = new SqlParameter("@Done", SqlDbType.Bit);
+            sql_Done.Direction = ParameterDirection.Output;
+
+            oCommand.Parameters.Add(sql_Account);
+            oCommand.Parameters.Add(sql_Msg);
+            oCommand.Parameters.Add(sql_Done);
+
+
+            SqlDataReader oReader = oCommand.ExecuteReader();
+            string Msg = string.Format("{0}", sql_Msg.Value);
+            if (Msg.Trim().Length > 0) TrustControl1.ClientMsg(Msg);
+
+            while (oReader.Read())
+            {
+                ((TextBox)(DetailsView1.FindControl("txtFIO"))).Text = oReader["FIO"].ToString().Trim();
+                ((TextBox)(DetailsView1.FindControl("txtNAMEONCARD"))).Text = oReader["FIO"].ToString().Trim().ToUpper();
+
+                DropDownList _cboSEX = (DropDownList)(DetailsView1.FindControl("cboSEX"));                
+                string _SEX = oReader["SEX"].ToString();
+
+                for (int i = 0; i < _cboSEX.Items.Count; i++)
+                {
+                    if (_cboSEX.Items[i].Value == _SEX) _cboSEX.Items[i].Selected = true;
+                    else _cboSEX.Items[i].Selected = false;
+                }
+
+                ((TextBox)(DetailsView1.FindControl("txtACCOUNTTP"))).Text = oReader["ACCOUNTTP"].ToString().Trim().ToUpper();
+                try
+                {
+                    ((TextBox)(DetailsView1.FindControl("txtDOB"))).Text = string.Format("{0:dd/MM/yyyy}", oReader["DOB"]);
+                }
+                catch(Exception)
+                {
+                    ((TextBox)(DetailsView1.FindControl("txtDOB"))).Text = "";
+                }
+
+                ((TextBox)(DetailsView1.FindControl("txtADDRESS"))).Text = oReader["ADDRESS"].ToString().Trim().ToUpper();
+                ((TextBox)(DetailsView1.FindControl("txtCORADDRESS"))).Text = oReader["CORADDRESS"].ToString().Trim().ToUpper();
+                ((TextBox)(DetailsView1.FindControl("txtRESADDRESS"))).Text = oReader["RESADDRESS"].ToString().Trim().ToUpper();
+                ((TextBox)(DetailsView1.FindControl("txtCELLPHONE"))).Text = oReader["CELLPHONE"].ToString().Trim().ToUpper().Replace("+","");
+                ((TextBox)(DetailsView1.FindControl("txtPHONE"))).Text = oReader["PHONE"].ToString().Trim().ToUpper().Replace("+", "");
+                ((TextBox)(DetailsView1.FindControl("txtMotherName"))).Text = oReader["MotherName"].ToString().Trim().ToUpper();
+                ((TextBox)(DetailsView1.FindControl("txtFatherName"))).Text = oReader["FatherName"].ToString().Trim().ToUpper();
+
+                
+
+                //TrustControl1.ClientMsg(AccTypes);
+                try
+                {
+                    foreach (ListItem i in ((DropDownList)(DetailsView1.FindControl("cboDeliveryToBranch"))).Items)
+                        i.Selected = false;
+                    foreach (ListItem i in ((DropDownList)(DetailsView1.FindControl("cboDeliveryToBranch"))).Items)
+                    {
+                        if (i.Value == (int.Parse(AccNo.Substring(0, 4))).ToString())
+                            i.Selected = true;
+                    }
+
+
+                }
+                catch (Exception) { }
+            }            
+        }
+        //ModalTitle.Focus();
+    }
+
+    protected void cmdSave_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            //SqlDataSourceCardProcessAddEdit.Insert();
+        }
+        catch (Exception ex)
+        {
+            TrustControl1.ClientMsg(ex.Message);
+        }
+    }
+
+    protected void cmdSave1_Click(object sender, EventArgs e)
+    {
+       
+
+        SaveImageToDB();
+        Response.Redirect("Card_AddEdit.aspx?id="+hidID.Value, true);
+    }
+    private void SaveImageToDB()
+    {
+        lblUploadStatus.Text = "";
+
+        try
+        {
+            //bool test = File.Exists(UploadTempFile);
+            lblUploadStatus.Text = Session["FILENAME"].ToString();
+            //return;
+        }
+        catch (Exception ex)
+        {
+            lblUploadStatus.Text = "E: " + ex.Message;
+            return;
+        }
+
+        try
+        {
+            string FileName = Session["FILENAME"].ToString();
+            //FileInfo FI = new FileInfo(FileName);
+            //string Extension = FileName.Substring(FileName.Trim().Length - 4, 4).ToUpper().Replace(".", "");
+            string Extension = (Path.GetExtension(FileName)).Replace(".", "").ToUpper();
+            switch (Extension)
+            {
+                case "JPEG":
+                case "JPG":
+                    byte[] FileContent = ReadFile(UploadCropFile);
+                    InsertData(Common.Compress(FileContent), true, FileName, Extension);
+
+                    File.Delete(UploadCropFile);
+                    DeleteOldUploadedFiles();
+                    cmdSave.Visible = false;
+                    break;
+                default:
+                    lblUploadStatus.Text = "Only JPG files can be uploaded.";
+                    //lblUploadStatus.Text = "Only ZIP files can be Uploaded.";
+                    //ClientScript.RegisterClientScriptBlock(GetType(), "alertMsg", "<script>alert('File type error.');</script>"); break;
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            lblUploadStatus.Text = ex.Message;
+        }
+
+        try
+        {
+            File.Delete(UploadTempFile);
+        }
+        catch (Exception) { }
+    }
+
+    protected byte[] ReadFile(string filePath)
+    {
+        byte[] buffer;
+        FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        try
+        {
+            int length = (int)fileStream.Length;  // get file length
+            buffer = new byte[length];            // create buffer
+            int count;                            // actual number of bytes read
+            int sum = 0;                          // total number of bytes read
+
+            // read until Read method returns 0 (end of the stream has been reached)
+            while ((count = fileStream.Read(buffer, sum, length - sum)) > 0)
+                sum += count;  // sum is a buffer offset for next reading
+        }
+        finally
+        {
+            fileStream.Close();
+        }
+        return buffer;
+    }
+
+    private void InsertData(byte[] content, bool IsInsertNew, string FileName, string Extension)
+    {
+
+        SqlConnection objConn = null;
+        SqlCommand objCom = null;
+        try
+        {
+            objConn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString);
+            objCom = new SqlCommand("s_Card_Pic_Insert", objConn);
+            objCom.CommandType = CommandType.StoredProcedure;
+
+            objCom.Parameters.Add("@ID", SqlDbType.Int).Value = hidID.Value;
+            objCom.Parameters.Add("@Picture", SqlDbType.Image).Value = content;
+
+            if (objConn.State == ConnectionState.Closed)
+                objConn.Open();
+            int i = objCom.ExecuteNonQuery();
+            objConn.Close();
+            Panel2.Visible = false;
+            pnlCropped.Visible = false;
+            //lblUploadStatus.Text = "Your profile picture has been changed.";
+            //HttpResponse.RemoveOutputCacheItem(string.Format("/EmpImage.aspx?EMPID={0}", Session["EMPID"]));
+            //HttpResponse.RemoveOutputCacheItem(string.Format("/EmpImage.aspx?EMPID={0}&W=200", Session["EMPID"]));
+
+        }
+        catch (Exception ex)
+        {
+            lblUploadStatus.Text = "Error: " + ex.Message;
+        }
+       
+    }
+
+    protected void SqlDataSourceCardProcessAddEdit_Inserted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        try
+        {
+            Session["CardType"] = ((DropDownList)(DetailsView1.FindControl("cboCardType"))).Text;
+        }
+        catch (Exception) { }
+
+        try
+        {
+            Session["DeliveryToBranch"] = ((DropDownList)(DetailsView1.FindControl("cboDeliveryToBranch"))).Text;
+        }
+        catch (Exception) { }
+
+        string RetVal = e.Command.Parameters["@Msg"].Value.ToString();
+        hidID.Value = e.Command.Parameters["@ID"].Value.ToString();
+        Session["ID"] = hidID.Value;
+        TrustControl1.ClientMsg(RetVal);
+
+        Response.Redirect("Card_AddEdit.aspx?ID="+hidID.Value);
+        
+        DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+        //DetailsView1.DataBind();
+      
+    }
+
+    protected void SqlDataSourceCardProcessAddEdit_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        //if (e.AffectedRows > 0)
+        //{
+            string RetVal = e.Command.Parameters["@Msg"].Value.ToString();
+            hidID.Value = e.Command.Parameters["@ID"].Value.ToString();
+        //TrustControl1.ClientMsg(RetVal);
+        //    //TrustControl1.ClientMsg("Successfully Saved.");
+        try
+        {
+            Session["CardType"] = ((DropDownList)(DetailsView1.FindControl("cboCardType"))).Text;
+        }
+        catch (Exception) { }
+
+        try
+        {
+            Session["DeliveryToBranch"] = ((DropDownList)(DetailsView1.FindControl("cboDeliveryToBranch"))).Text;
+        }
+        catch (Exception) { }
+        DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+        DetailsView1.DataBind();
+
+    }
+
+    protected void DetailsView1_ItemUpdated(object sender, DetailsViewUpdatedEventArgs e)
+    {
+        //Response.Redirect("~/Card_AddEdit.aspx?ID=" + hidID.Value, true);
+    }
+
+    public string toCellPhone(object input)
+    {
+        return MyControl1.ToItclPhone(input.ToString());        
+    }
+
+    protected void cboCardType_DataBound(object sender, EventArgs e)
+    {
+        try
+        {
+            //((DropDownList)(DetailsView1.FindControl("cboCardType"))).Items.Clear();
+            //((DropDownList)(DetailsView1.FindControl("cboCardType"))).DataBind();
+
+            if (((DropDownList)(DetailsView1.FindControl("cboCardType"))).Items.Count > 1)
+                ((DropDownList)(DetailsView1.FindControl("cboCardType"))).Items.Insert(0, "");
+
+            //foreach (ListItem LI in ((DropDownList)(DetailsView1.FindControl("cboCardType"))).Items)
+            //{
+            //    if (LI.Value == "") LI.Selected = true;
+            //    else LI.Selected = false;
+            //}
+
+            foreach (ListItem i in ((DropDownList)(DetailsView1.FindControl("cboCardType"))).Items)
+            {
+                if (i.Value == Session["CardType"].ToString())
+                    i.Selected = true;
+            }
+
+            //((DropDownList)(DetailsView1.FindControl("cboCardType"))).Text = Session["CardType"].ToString();
+        }
+        catch (Exception) { }
+    }
+
+    protected void cboDeliveryToBranch_DataBound(object sender, EventArgs e)
+    {
+        //try
+        //{
+        //    foreach (ListItem i in ((DropDownList)(DetailsView1.FindControl("cboDeliveryToBranch"))).Items)
+        //    {
+        //        if (i.Value == Session["DeliveryToBranch"].ToString())
+        //            i.Selected = true;
+        //    }
+        //}
+        //catch (Exception) { }
+    }
+
+    protected void DetailsView1_DataBound(object sender, EventArgs e)
+    {
+        try
+        {
+            string Account = DataBinder.Eval(DetailsView1.DataItem, "Account").ToString();
+            string AccTypes = Account.Substring(5, 4);
+            ACType.Value = AccTypes;
+            //((DropDownList)(DetailsView1.FindControl("cboCardType"))).DataBind();
+        }
+        catch (Exception ex) { }
+
+        try
+        {
+            Boolean PictureRequired = (bool)DataBinder.Eval(DetailsView1.DataItem, "PictureRequired");
+            //if (CardType == "418117080" || CardType == "418117090")//VE Sristy Primary & 418117080
+            if(PictureRequired)
+                Panel11111.Visible = true;
+            else
+                Panel11111.Visible = false;
+        }
+        catch (Exception ex) { }
+
+
+        if (DetailsView1.CurrentMode == DetailsViewMode.ReadOnly)
+        {
+            try
+            {
+                bool SendToProcess = ((CheckBox)(DetailsView1.FindControl("chkSendToProcess"))).Checked;
+                if ((!SendToProcess && Session["BRANCHID"].ToString() == (((Label)(DetailsView1.FindControl("lblReqBranch"))).Text))
+                    || (!SendToProcess && (Session["BRANCHID"].ToString() == "1" && Session["DEPTID"].ToString() == "7")))
+                {
+                    ((Button)(DetailsView1.Rows[DetailsView1.Rows.Count - 1].FindControl("cmdEdit"))).Enabled = true;
+                    Panel2.Visible = true;
+                }
+                else
+                {
+                    Panel2.Visible = false;
+                }
+               
+                //((DropDownList)(DetailsView1.FindControl("cboCardType"))).DataBind();
+            }
+            catch (Exception) { }
+        }
+    }
+
+    protected bool SendToProcess(object val)
+    {
+        bool Retval = false;
+        try
+        {
+            Retval = (bool)val;
+        }
+        catch (Exception) { }
+        return Retval;
+    }
+    protected void DetailsView1_ItemUpdating(object sender, DetailsViewUpdateEventArgs e)
+    {        
+        if (!checkAccount(true))
+        {
+            e.Cancel = true;
+            return;
+        }
+
+      
+        //e.Cancel = true;
+        //return; 
+        if (((DropDownList)DetailsView1.FindControl("cboECSTATUS")).SelectedItem.Value == "1")
+        {
+            if (((TextBox)DetailsView1.FindControl("txtEmail")).Text.Trim().Length < 1)
+            {
+                TrustControl1.ClientMsg("Please enter Email Address to Enroll E-Commerce.");
+                ((TextBox)DetailsView1.FindControl("txtEmail")).Focus();
+                e.Cancel = true;
+            }
+        }
+    }
+    protected void DetailsView1_ItemInserting(object sender, DetailsViewInsertEventArgs e)
+    {
+        if (!checkAccount(false))
+        {
+            e.Cancel = true;
+            return;
+        }
+        //e.Cancel = true;
+        //return;
+       
+        if (((DropDownList)DetailsView1.FindControl("cboECSTATUS")).SelectedItem.Value == "1")
+        {
+            if (((TextBox)DetailsView1.FindControl("txtEmail")).Text.Trim().Length < 1)
+            {
+                TrustControl1.ClientMsg("Please enter Email Address to Enroll E-Commerce.");
+                ((TextBox)DetailsView1.FindControl("txtEmail")).Focus();
+                e.Cancel = true;
+            }
+        }
+    }
+
+    private bool checkAccount(bool Edit)
+    {
+        //bool RetVal = false;
+        //string AccNo = ((TextBox)(DetailsView1.FindControl("txtAccNo"))).Text.Trim();
+        ////modal.Show();
+        //if (String.IsNullOrEmpty(AccNo))
+        //    TrustControl1.ClientMsg("Please Enter A/C Number.");
+        //else
+        //{
+        //    string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+        //    SqlConnection oConn = new SqlConnection(oConnString);
+        //    if (oConn.State == ConnectionState.Closed) oConn.Open();
+
+        //    SqlCommand oCommand = new SqlCommand("sp_AccTypeCheck", oConn);
+        //    oCommand.CommandType = CommandType.StoredProcedure;
+
+        //    SqlParameter sql_Account = new SqlParameter("Account", SqlDbType.VarChar, 20);
+        //    sql_Account.Value = AccNo;
+
+        //    SqlParameter sql_Msg = new SqlParameter("Msg", SqlDbType.VarChar, 255);
+        //    sql_Msg.Direction = ParameterDirection.Output;
+
+        //    SqlParameter sql_Done = new SqlParameter("Done", SqlDbType.Bit);
+        //    sql_Done.Direction = ParameterDirection.Output;
+
+        //    SqlParameter sql_ID = new SqlParameter("ID", SqlDbType.VarChar);
+        //    sql_ID.Value = string.Format("{0}", Request.QueryString["ID"]);
+
+        //    SqlParameter sql_Edit = new SqlParameter("Edit", SqlDbType.Bit);
+        //    sql_Edit.Value = Edit;
+
+        //    oCommand.Parameters.Add(sql_Account);
+        //    oCommand.Parameters.Add(sql_Msg);
+        //    oCommand.Parameters.Add(sql_Done);
+        //    oCommand.Parameters.Add(sql_Edit);
+        //    oCommand.Parameters.Add(sql_ID);
+
+        //    oCommand.ExecuteNonQuery();
+        //    string Msg = string.Format("{0}", sql_Msg.Value);
+        //    RetVal = (bool)sql_Done.Value;
+
+        //    if (Msg.Trim().Length > 0)
+        //        TrustControl1.ClientMsg(Msg);           
+            
+        //}
+        return true;
+    }
+    protected void SqlDataSourceCardProcessAddEdit_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+
+        Panel11111.Visible = e.AffectedRows > 0;
+
+
+    }
+    public void FileUpload1_UploadedComplete(object sender, AjaxControlToolkit.AsyncFileUploadEventArgs e)
+    {
+        try
+        {
+            Session["FILENAME"] = FileUpload1.FileName.Trim();
+            if (FileUpload1.FileBytes.Length > (2 * 1024 * 1024))
+            {
+                throw new Exception("Invalid File Size");
+            }
+            FileUpload1.SaveAs(UploadTempFile);
+            FileInfo FI = new FileInfo(UploadTempFile);
+            FI.CreationTime = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Response.Write(ex.Message);
+        }
+    }
+    protected void FileUpload1_UploadedFileError(object sender, AjaxControlToolkit.AsyncFileUploadEventArgs e)
+    {
+
+    }
+    protected void btnCrop_Click(object sender, EventArgs e)
+    {
+        int w = 100;
+        int h = 100;
+        int x = 0;
+        int y = 0;
+
+        try
+        {
+            w = (int)double.Parse(crop_W.Value);
+            h = (int)double.Parse(crop_H.Value);
+            x = (int)double.Parse(crop_X.Value);
+            y = (int)double.Parse(crop_Y.Value);
+        }
+        catch (Exception)
+        {
+        }
+        byte[] CropImage = Crop(UploadPath + ImageName, w, h, x, y);
+        using (MemoryStream ms = new MemoryStream(CropImage, 0, CropImage.Length))
+        {
+            ms.Write(CropImage, 0, CropImage.Length);
+            using (SD.Image CroppedImage = SD.Image.FromStream(ms, true))
+            {
+                string SaveTo = UploadPath + "crop_" + ImageName;
+
+                MaxImageSizePx_ToSaveDB = int.Parse(TrustControl1.getValueOfKey("MaxImageSizePx_ToSaveDB"));
+
+                if (CroppedImage.Width > MaxImageSizePx_ToSaveDB)
+                    TrustControl1.ResizeImage((System.Drawing.Bitmap)CroppedImage, MaxImageSizePx_ToSaveDB, MaxImageSizePx_ToSaveDB, 90, SaveTo);
+                else
+                    CroppedImage.Save(SaveTo, CroppedImage.RawFormat);
+
+                pnlCrop.Visible = false;
+                pnlCropped.Visible = true;
+                imgCropped.ImageUrl = imgCrop.ImageUrl = "Upload/crop_" + ImageName;
+            }
+        }
+        cmdSave.Visible = true;
+        File.Delete(UploadTempFile); ;
+        //DeleteOldUploadedFiles();
+
+        SaveImageToDB();
+        Response.Redirect("Card_AddEdit.aspx?id=" + hidID.Value, true);
+    }
+    protected void cmdUpload_Click(object sender, EventArgs e)
+    {
+        Panel2.Visible = false;
+        pnlCrop.Visible = true;
+        imgCrop.ImageUrl = "Images/loader.gif";
+        imgCrop.Attributes.Add("loadimg", "Upload/" + ImageName);
+        PanelProfileImage.Visible = false;
+    }
+    private void DeleteOldUploadedFiles()
+    {
+        try
+        {
+            string[] Files = Directory.GetFiles(Server.MapPath("Upload/"));
+            foreach (string FileName in Files)
+                if (File.GetCreationTime(FileName) < DateTime.Now.AddHours(-3) || FileName.Contains(Session.SessionID))
+                    File.Delete(FileName);
+        }
+        catch (Exception) { }
+    }
+
+    static byte[] Crop(string Img, int Width, int Height, int X, int Y)
+    {
+        try
+        {
+            using (SD.Image OriginalImage = SD.Image.FromFile(Img))
+            {
+                using (SD.Bitmap bmp = new SD.Bitmap(Width, Height))
+                {
+                    bmp.SetResolution(OriginalImage.HorizontalResolution, OriginalImage.VerticalResolution);
+                    using (SD.Graphics Graphic = SD.Graphics.FromImage(bmp))
+                    {
+                        Graphic.SmoothingMode = SmoothingMode.AntiAlias;
+                        Graphic.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                        Graphic.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                        Graphic.DrawImage(OriginalImage, new SD.Rectangle(0, 0, Width, Height), X, Y, Width, Height, SD.GraphicsUnit.Pixel);
+                        MemoryStream ms = new MemoryStream();
+                        bmp.Save(ms, OriginalImage.RawFormat);
+                        return ms.GetBuffer();
+                    }
+                }
+            }
+        }
+        catch (Exception Ex)
+        {
+            throw (Ex);
+        }
+    }
+
+    protected void SqlDataSourceCardProcessAddEdit_Inserting(object sender, SqlDataSourceCommandEventArgs e)
+    {
+        e.Command.Parameters["@CardType"].Value = ((DropDownList)DetailsView1.FindControl("cboCardType")).SelectedValue;
+    }
+
+    protected void SqlDataSourceCardProcessAddEdit_Updating(object sender, SqlDataSourceCommandEventArgs e)
+    {
+        e.Command.Parameters["@CardType"].Value = ((DropDownList)DetailsView1.FindControl("cboCardType")).SelectedValue;
+    }
+
+    protected void SqlDataSourceCardProcessAddEdit_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(Msg);
+    }
+}

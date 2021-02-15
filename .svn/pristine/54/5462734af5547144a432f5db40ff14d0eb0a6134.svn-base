@@ -1,0 +1,59 @@
+﻿using System;
+using System.Web.UI.WebControls;
+
+public partial class Search_Reissue_Request : System.Web.UI.Page
+{
+    
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+
+        if (!IsPostBack)
+        {
+            txtSearch.Focus();
+            txtDateFrom.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date.AddMonths(-1));
+            txtDateTo.Text = string.Format("{0:dd/MM/yyyy}", DateTime.Now.Date);
+        }
+        else
+            GridView1.Visible = true;
+       
+    }
+
+
+    protected void cmdOK_Click(object sender, EventArgs e)
+    {
+        Response.Redirect("New_Reissue_Request.aspx?id="+txtFilter.Text);
+
+    }
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void cboBranch_DataBound(object sender, EventArgs e)
+    {
+        foreach (ListItem i in cboBranch.Items)
+
+            i.Selected = false;
+
+
+        if (Session["BRANCHID"].ToString() != "1")
+        {
+            foreach (ListItem ii in cboBranch.Items)
+            {
+                if (ii.Value == Session["BRANCHID"].ToString())
+                    ii.Selected = true;
+                else
+                    ii.Enabled = false;
+            }
+        }
+
+    }
+
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        lblStatus.Text = string.Format("Total: <b>{0:N0}</b>", e.AffectedRows);
+    }
+}
+    
+   

@@ -1,0 +1,248 @@
+﻿using OfficeOpenXml;
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Text;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using OfficeOpenXml;
+
+public partial class InternationalTransactionView : System.Web.UI.Page
+{
+    protected void btnSearch_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+    }
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Page.Form.Attributes.Add("enctype", "multipart/form-data");
+        TrustControl1.getUserRoles();try
+        {
+        this.Title = string.Format("Batch: {0}", Request.QueryString["batchid"]);
+        string batch = Request.QueryString["batchId"].ToString();
+
+            if (Request.QueryString["type"].ToString() == "view")
+            {
+                GridView1.DataBind();
+            }
+            else if (Request.QueryString["type"].ToString() == "xml")
+            {
+                string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+                SqlConnection oConn = new SqlConnection(oConnString);
+                SqlCommand oCommand = new SqlCommand("s_InternationalTransaction_xml", oConn);
+                oCommand.CommandType = CommandType.StoredProcedure;
+                oCommand.Parameters.AddWithValue("Batch", batch);
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                SqlDataAdapter da = new SqlDataAdapter(oCommand);
+
+                DataSet Dss = new DataSet();
+                da.Fill(Dss);
+
+                string FileName = System.IO.Path.GetRandomFileName();
+
+
+                StringBuilder SW = new StringBuilder();
+
+                string line0 = "<?xml version=" + "\"1.0\"" + " encoding=" + "\"UTF-8\"" + " standalone=" + "\"yes\"" + "?>";
+
+                string line1 = "<imc xmlns:xsi=" + "\"http://www.w3.org/2001/XMLSchema-instance" + "\">";
+                SW.Append(line0).AppendLine();
+                SW.Append(line1).AppendLine();
+                foreach (DataRow dr in Dss.Tables[0].Rows)
+                {
+                    string line = dr[0].ToString();
+                    SW.Append(line).AppendLine();
+                }
+                string linelast = "</imc>";
+                SW.Append(linelast).AppendLine();
+
+                //Downloading xml file 
+                string download_file_name = "attachment; filename=OFS" + DateTime.Now.Year + DateTime.Now.ToString("MM") + DateTime.Now.ToString("dd") + DateTime.Now.Hour + DateTime.Now.Minute + ".xml";
+                Response.ClearHeaders();
+                Response.Clear();
+                Response.ClearContent();
+                Response.AddHeader("content-disposition", download_file_name);
+                Response.ContentType = "text/xml";
+                Response.AddHeader("Pragma", "public");
+
+                Response.Write(SW);
+                Response.End();
+            }
+            else if (Request.QueryString["type"].ToString() == "xlsx")
+            {
+                string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+                SqlConnection oConn = new SqlConnection(oConnString);
+                SqlCommand oCommand = new SqlCommand("s_InternationalTransaction_Download_xlsx", oConn);
+                oCommand.CommandType = CommandType.StoredProcedure;
+                oCommand.Parameters.AddWithValue("batch", batch);
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                SqlDataAdapter da = new SqlDataAdapter(oCommand);
+
+                DataSet Dss = new DataSet();
+                da.Fill(Dss);
+
+                string FileName = System.IO.Path.GetRandomFileName();
+
+                if (File.Exists(FileName)) File.Delete(FileName);
+                FileInfo FI = new FileInfo(FileName);
+                using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                {
+                    ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("International Transaction");
+                    int StartRow = 1;
+                    //Adding Title Row
+                    worksheet.Cells[StartRow, 1].Value = "BB_COUNTRY_CODE";
+                    worksheet.Cells[StartRow, 2].Value = "BB_COUNTRY_NAME";
+                    worksheet.Cells[StartRow, 3].Value = "CategoryOfFC";
+                    worksheet.Cells[StartRow, 4].Value = "TotalAmount";
+
+                    worksheet.Column(1).Width = 20;
+                    worksheet.Column(2).Width = 35;
+                    worksheet.Column(3).Width = 35;
+                    worksheet.Column(4).Width = 15;
+
+                    for (int r = 0; r < Dss.Tables[0].Rows.Count; r++)
+                    {
+                        int R = StartRow + r + 1;
+
+                        if (Dss.Tables[0].Rows[r]["BB_COUNTRY_CODE"] != DBNull.Value)
+                        {
+                            worksheet.Cells[R, 1].Value = Dss.Tables[0].Rows[r]["BB_COUNTRY_CODE"].ToString();
+                            //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                        }
+                        if (Dss.Tables[0].Rows[r]["BB_COUNTRY_NAME"] != DBNull.Value)
+                        {
+                            worksheet.Cells[R, 2].Value = Dss.Tables[0].Rows[r]["BB_COUNTRY_NAME"].ToString();
+                            //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                        }
+
+                        if (Dss.Tables[0].Rows[r]["CategoryOfFC"] != DBNull.Value)
+                        {
+                            worksheet.Cells[R, 3].Value = Dss.Tables[0].Rows[r]["CategoryOfFC"].ToString();
+                            //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                        }
+                        if (Dss.Tables[0].Rows[r]["TotalAmount"] != DBNull.Value)
+                        {
+                            worksheet.Cells[R, 4].Value = Dss.Tables[0].Rows[r]["TotalAmount"].ToString();
+                            //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                        }
+                    }
+                    //worksheet.Cells["A1:D1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    //worksheet.Cells["B1:B"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                    //worksheet.Cells["C1:C"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    //worksheet.Cells["D1:D"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    //worksheet.Cells["A1:D"].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Top;
+                    worksheet.Cells["A1:D1"].Style.Font.Bold = true;
+
+                   
+                    xlPackage.Workbook.Properties.Title = "International Transaction";
+                    xlPackage.Workbook.Properties.Author = "IT Division";
+                    xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                    //xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                    xlPackage.Save();
+
+                }
+                //Reading File Content
+                byte[] content = File.ReadAllBytes(FileName);
+                File.Delete(FileName);
+
+                //Downloading File
+                Response.Clear();
+                Response.ClearContent();
+                Response.ClearHeaders();
+                Response.ContentType = "application/xlsx";
+                Response.AddHeader("Content-Disposition", "attachment;filename=" + "International_Transaction" + ".xlsx");
+                Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                Response.BinaryWrite(content);
+                Response.End();
+                return;
+            }
+        }
+        catch(Exception exx) { TrustControl1.ClientMsg(exx.ToString()); }        
+    }
+    protected void SqlDataSource1_Selected(object sender, System.Web.UI.WebControls.SqlDataSourceStatusEventArgs e)
+    {
+        // SqlDataSource6_Selected(sender,e);
+        //SqlDataSource6.DataBind();
+        //lblStatus.Text = string.Format("Total Rows: <b>{0:N0}</b>", e.AffectedRows);
+        //string deleted= string.Format("Total Rows: <b>{0:N0}</b>", e.Command.Parameters["@DeleteCount"]);
+        //TrustControl1.ClientMsg(deleted);
+        //SqlDataSource6.Select(DataSourceSelectArguments.Empty);
+
+    }
+    protected void DetailsView1_ItemInserted(object sender, DetailsViewInsertedEventArgs e)
+    {
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+    protected void DetailsView1_ItemUpdated(object sender, DetailsViewUpdatedEventArgs e)
+    {
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+    protected void DetailsView1_ModeChanged(object sender, EventArgs e)
+    {
+        if (DetailsView1.CurrentMode == DetailsViewMode.ReadOnly)
+            DetailsView1.CellPadding = 1;
+        else
+            DetailsView1.CellPadding = 1;
+        modal.Show();
+    }
+    protected void DetailsView1_DataBound(object sender, EventArgs e)
+    {
+        try
+        {
+            if (TrustControl1.isRole("ADMIN"))
+            {
+                DetailsView1.Fields[DetailsView1.Fields.Count - 1].Visible = true;
+                DetailsView1.Fields[DetailsView1.Fields.Count - 2].Visible = true;
+            }
+        }
+        catch (Exception) { }
+    }
+    protected void GridView1_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_RowEditing(object sender, GridViewEditEventArgs e)
+    {
+        GridView1.Rows[e.NewEditIndex].Focus();
+    }
+    protected void GridView1_RowUpdating(object sender, GridViewUpdateEventArgs e)
+    {
+        GridView1.Rows[e.RowIndex].Focus();
+    }
+    protected void GridView1_SelectedIndexChanging(object sender, GridViewSelectEventArgs e)
+    {
+        DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+    }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        modal.Show();
+    }
+
+    protected void SqlDataSource1_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(Msg);
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+
+    protected void SqlDataSource2_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string Msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(Msg);
+        GridView1.DataBind();
+        GridView5.DataBind();
+    }
+
+    protected void SqlDataSource6_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+       // lblDeleted.Text = string.Format("Deleted Rows: <b>{0:N0}</b>", e.AffectedRows);
+    }
+}

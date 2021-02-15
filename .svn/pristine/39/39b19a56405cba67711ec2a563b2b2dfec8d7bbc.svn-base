@@ -1,0 +1,174 @@
+﻿using System;
+using System.Data;
+using System.IO;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using OfficeOpenXml;
+using SocialExplorer.IO.FastDBF;
+
+public partial class CreditCardFeesReverseView : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+
+        lblTitle.Text = string.Format("Credit Card Fees Reverse View # {0}", Request.QueryString["batch"]);
+        this.Title = string.Format("Credit Card Fees Reverse View # {0}", Request.QueryString["batch"]);
+        try
+        {
+            if (Request.QueryString["type"].ToString() == "dbf")
+            {
+                try
+                {
+                    string FileName = Path.GetTempFileName();
+                    string Batch = Request.QueryString["batch"].ToString();
+
+                    DbfFile odbf = new DbfFile();
+                    odbf.Open(FileName, FileMode.Create);
+
+                    odbf.Header.AddColumn(new DbfColumn("SBK_PAN", DbfColumn.DbfColumnType.Character, 19, 0));
+                    odbf.Header.AddColumn(new DbfColumn("SBK_MBR", DbfColumn.DbfColumnType.Number, 5, 0));
+                    odbf.Header.AddColumn(new DbfColumn("SBK_SUM", DbfColumn.DbfColumnType.Number, 18, 2));
+                    odbf.Header.AddColumn(new DbfColumn("SBK_ACUR", DbfColumn.DbfColumnType.Number, 5, 0));
+
+                    DbfRecord orec = new DbfRecord(odbf.Header);
+
+                    DataView DV = (DataView)SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+                    for (int r = 0; r < DV.Table.Rows.Count; r++)
+                    {
+                        orec[0] = DV.Table.Rows[r]["SBK_PAN"].ToString();
+                        orec[1] = DV.Table.Rows[r]["SBK_MBR"].ToString();
+                        orec[2] = DV.Table.Rows[r]["SBK_SUM"].ToString();
+                        orec[3] = DV.Table.Rows[r]["SBK_ACUR"].ToString();
+
+                        odbf.Write(orec, true);
+                    }
+                    odbf.Close();
+
+
+                    //Reading File Content
+                    byte[] content = File.ReadAllBytes(FileName);
+                    File.Delete(FileName);
+
+                    //Downloading File
+                    Response.Clear();
+                    Response.ClearContent();
+                    Response.ClearHeaders();
+                    Response.ContentType = "application/octet-stream";
+                    Response.AddHeader("Content-Disposition", "attachment;filename=" + "CreditCardFeesReverse_" + Batch + ".dbf");
+                    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                    Response.BinaryWrite(content);
+                    Response.End();
+                }
+                catch (Exception ex)
+                {
+                    TrustControl1.ClientMsg(ex.Message);
+                }
+            }
+
+
+            else if (Request.QueryString["type"].ToString() == "xlsx")
+            {
+                try
+                {
+                    string FileName = Path.GetTempFileName();
+                    string Batch = Request.QueryString["batch"].ToString();
+
+                    if (File.Exists(FileName)) File.Delete(FileName);
+                    FileInfo FI = new FileInfo(FileName);
+
+                    using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                    {
+                        ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("CreditCardFeesReverse");
+                        int StartRow = 1;
+                        //Adding Title Row
+                        worksheet.Cells[StartRow, 1].Value = "SBK_PAN";
+                        worksheet.Cells[StartRow, 2].Value = "SBK_MBR";
+                        worksheet.Cells[StartRow, 3].Value = "SBK_SUM";
+                        worksheet.Cells[StartRow, 4].Value = "SBK_ACUR";
+
+                        worksheet.Column(1).Width = 22;
+                        worksheet.Column(2).Width = 20;
+                        worksheet.Column(3).Width = 15;
+                        worksheet.Column(4).Width = 15;
+
+                        DataView DV = (DataView)SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+
+                        for (int r = 0; r < DV.Table.Rows.Count; r++)
+                        {
+                            int R = StartRow + r + 1;
+
+                            if (DV.Table.Rows[r]["SBK_PAN"] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, 1].Value = DV.Table.Rows[r]["SBK_PAN"].ToString();
+                                //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                            }
+
+
+                            if (DV.Table.Rows[r]["SBK_MBR"] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, 2].Value = DV.Table.Rows[r]["SBK_MBR"].ToString();
+                                //worksheet.Cells[R, 2].Style.Numberformat.Format = "#.##";
+                            }
+
+                            worksheet.Cells[R, 3].Value = DV.Table.Rows[r]["SBK_SUM"].ToString();
+
+
+
+                            if (DV.Table.Rows[r]["SBK_ACUR"] != DBNull.Value)
+                            {
+                                worksheet.Cells[R, 4].Value = DV.Table.Rows[r]["SBK_ACUR"].ToString();
+                            }
+                        }
+                        worksheet.Cells["A1:D1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        worksheet.Cells["B1:B"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                        worksheet.Cells["C1:C"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        worksheet.Cells["D1:D"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                        worksheet.Cells["A1:D"].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Top;
+                        worksheet.Cells["A1:D1"].Style.Font.Bold = true;
+
+
+
+                        //Adding Properties
+                        xlPackage.Workbook.Properties.Title = "CreditCardFeesReverse";
+                        xlPackage.Workbook.Properties.Author = "Sadrul";
+                        xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                        //xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                        xlPackage.Save();
+                    }
+
+
+                    //Reading File Content
+                    byte[] content = File.ReadAllBytes(FileName);
+                    File.Delete(FileName);
+
+                    //Downloading File
+                    Response.Clear();
+                    Response.ClearContent();
+                    Response.ClearHeaders();
+                    Response.ContentType = "application/xlsx";
+                    Response.AddHeader("Content-Disposition", "attachment;filename=" + "CreditCardFeesReverse_" + Batch + ".xlsx");
+                    Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                    Response.BinaryWrite(content);
+                    Response.End();
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    lblStatus.Text = ex.Message;
+                }
+            }
+        }catch (Exception ex) { }
+    }
+
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        if (e.AffectedRows > 0)
+            lblStatus.Text = string.Format("Total Cards: <b>{0:N0}</b>", e.AffectedRows);
+        else
+            lblStatus.Text = "";
+    }
+
+}

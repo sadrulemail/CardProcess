@@ -1,0 +1,379 @@
+﻿using System;
+using System.Data;
+using System.IO;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using OfficeOpenXml;
+using SocialExplorer.IO.FastDBF;
+
+public partial class Card_Reissue_Batch : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (TrustControl1.getUserRoles() != "ADMIN")
+        {
+            if (Session["DEPTID"].ToString() != "7" || Session["DEPTID"].ToString() != "35")    //Not IT & Cards
+            {
+                Response.Write("No Permission.<br><br><a href=''>Home</a>");
+                Response.End();
+            }            
+        }
+
+        lblTitle.Text = string.Format("Card Reissue Batch # {0}", Request.QueryString["batch"]);
+        this.Title = string.Format("Card Reissue # {0}", Request.QueryString["batch"]);
+
+        if (Request.QueryString["type"].ToString() == "dbf")
+        {
+            try
+            {
+                string FileName = Path.GetTempFileName();
+                string BatchID = Request.QueryString["batch"].ToString();
+
+                DbfFile odbf = new DbfFile();
+                odbf.Open(FileName, FileMode.Create);
+
+                odbf.Header.AddColumn(new DbfColumn("NAMEONCARD", DbfColumn.DbfColumnType.Character, 19, 0));
+                odbf.Header.AddColumn(new DbfColumn("REASON", DbfColumn.DbfColumnType.Number, 3, 0));
+                odbf.Header.AddColumn(new DbfColumn("PAN", DbfColumn.DbfColumnType.Character, 20, 0));
+                odbf.Header.AddColumn(new DbfColumn("MBR", DbfColumn.DbfColumnType.Number, 1, 0));
+                odbf.Header.AddColumn(new DbfColumn("CARDPREFIX", DbfColumn.DbfColumnType.Character, 20, 0));
+                odbf.Header.AddColumn(new DbfColumn("SIGNSTAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                odbf.Header.AddColumn(new DbfColumn("CRD_STAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                DbfRecord orec = new DbfRecord(odbf.Header);
+
+                DataView DV = (DataView)SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+                for (int r = 0; r < DV.Table.Rows.Count; r++)
+                {
+                    orec[0] = DV.Table.Rows[r]["NameOnCard"].ToString();
+                    orec[1] = DV.Table.Rows[r]["Reason"].ToString();
+                    orec[2] = DV.Table.Rows[r]["CardNumber"].ToString();
+                    orec[3] = "0";
+                    orec[4] = DV.Table.Rows[r]["CardTypeNew"].ToString();
+                    orec[5] = "1";
+                    orec[6] = "0";
+                    odbf.Write(orec, true);
+                }
+                odbf.Close();
+
+
+                //Reading File Content
+                byte[] content = File.ReadAllBytes(FileName);
+                File.Delete(FileName);
+
+                //Downloading File
+                Response.Clear();
+                Response.ClearContent();
+                Response.ClearHeaders();
+                Response.ContentType = "application/octet-stream";
+                Response.AddHeader("Content-Disposition", "attachment;filename=" + "Card_Reissue_" + BatchID + ".dbf");
+                Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                Response.BinaryWrite(content);
+                Response.End();
+            }
+            catch (Exception ex)
+            {
+                TrustControl1.ClientMsg(ex.Message);
+            }
+        }
+
+        else if (Request.QueryString["type"].ToString() == "dbf1")
+        {
+            try
+            {
+                string FileName = Path.GetTempFileName();
+                string BatchID = Request.QueryString["batch"].ToString();
+
+                DbfFile odbf = new DbfFile();
+                odbf.Open(FileName, FileMode.Create);
+
+                odbf.Header.AddColumn(new DbfColumn("PAN", DbfColumn.DbfColumnType.Character, 20, 0));
+                odbf.Header.AddColumn(new DbfColumn("MBR", DbfColumn.DbfColumnType.Number, 1, 0));
+                odbf.Header.AddColumn(new DbfColumn("SIGNSTAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                odbf.Header.AddColumn(new DbfColumn("CRD_STAT", DbfColumn.DbfColumnType.Character, 1, 0));
+                DbfRecord orec = new DbfRecord(odbf.Header);
+
+                DataView DV = (DataView)SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+                for (int r = 0; r < DV.Table.Rows.Count; r++)
+                {
+                    //orec[0] = DV.Table.Rows[r]["NameOnCard"].ToString();
+                    //orec[1] = DV.Table.Rows[r]["Reason"].ToString();
+                    orec[0] = DV.Table.Rows[r]["CardNumber"].ToString();
+                    orec[1] = "0";
+                    orec[2] = DV.Table.Rows[r]["SIGNSTAT"].ToString();
+                    orec[3] = DV.Table.Rows[r]["CRD_STAT"].ToString();
+                    //orec[4] = "0";
+                    odbf.Write(orec, true);
+                }
+                odbf.Close();
+
+
+                //Reading File Content
+                byte[] content = File.ReadAllBytes(FileName);
+                File.Delete(FileName);
+
+                //Downloading File
+                Response.Clear();
+                Response.ClearContent();
+                Response.ClearHeaders();
+                Response.ContentType = "application/octet-stream";
+                Response.AddHeader("Content-Disposition", "attachment;filename=" + "Card_Reissue_State_Change_" + BatchID + ".dbf");
+                Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                Response.BinaryWrite(content);
+                Response.End();
+            }
+            catch (Exception ex)
+            {
+                TrustControl1.ClientMsg(ex.Message);
+            }
+        }
+
+
+
+        else if (Request.QueryString["type"].ToString() == "xlsx")
+        {
+            try
+            {
+                string FileName = Path.GetTempFileName();
+                string BatchID = Request.QueryString["batch"].ToString();
+
+                if (File.Exists(FileName)) File.Delete(FileName);
+                FileInfo FI = new FileInfo(FileName);
+
+                using (ExcelPackage xlPackage = new ExcelPackage(FI))
+                {
+                    ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("Card Reissue List");
+                    int StartRow = 1;
+                    //Adding Title Row
+                    worksheet.Cells[StartRow, 1].Value = "Accountno";
+                    worksheet.Cells[StartRow, 2].Value = "Amount_tk";
+                    worksheet.Cells[StartRow, 3].Value = "Dr_Cr";
+                    worksheet.Cells[StartRow, 4].Value = "Trn_br_code";
+
+                    worksheet.Column(1).Width = 22;
+                    worksheet.Column(2).Width = 20;
+                    worksheet.Column(3).Width = 15;
+                    worksheet.Column(4).Width = 15;
+
+                    DataView DV = (DataView)SqlDataSource1.Select(DataSourceSelectArguments.Empty);
+
+                    for (int r = 0; r < DV.Table.Rows.Count; r++)
+                    {
+                        int R = StartRow + r + 1;
+
+                        if (DV.Table.Rows[r]["Account"] != DBNull.Value)
+                        {
+                            worksheet.Cells[R, 1].Value = DV.Table.Rows[r]["Account"].ToString();
+                            //worksheet.Cells[R, 1].Style.Numberformat.Format = "MM/dd/yyyy";
+                        }
+
+
+                        if (DV.Table.Rows[r]["Card_ReissueFee"] != DBNull.Value)
+                        {
+                            worksheet.Cells[R, 2].Value = DV.Table.Rows[r]["Card_ReissueFee"].ToString();
+                            worksheet.Cells[R, 2].Style.Numberformat.Format = "#.##";
+                        }
+
+                        worksheet.Cells[R, 3].Value = "Dr";
+
+
+
+                        if (DV.Table.Rows[r]["BranchID"] != DBNull.Value)
+                        {
+                            worksheet.Cells[R, 4].Value = DV.Table.Rows[r]["Account"].ToString().Trim().Substring(0, 4);
+                        }
+                    }
+                    worksheet.Cells["A1:D1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    worksheet.Cells["B1:B"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+                    worksheet.Cells["C1:C"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    worksheet.Cells["D1:D"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                    worksheet.Cells["A1:D"].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Top;
+                    worksheet.Cells["A1:D1"].Style.Font.Bold = true;
+
+
+
+                    //Adding Properties
+                    xlPackage.Workbook.Properties.Title = "CARD-REISSUE-VISA";
+                    xlPackage.Workbook.Properties.Author = "Administrator";
+                    xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                    //xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                    xlPackage.Save();
+                }
+
+
+                //Reading File Content
+                byte[] content = File.ReadAllBytes(FileName);
+                File.Delete(FileName);
+
+                //Downloading File
+                Response.Clear();
+                Response.ClearContent();
+                Response.ClearHeaders();
+                Response.ContentType = "application/xlsx";
+                Response.AddHeader("Content-Disposition", "attachment;filename=" + "CARD_REISSUE_VISA_" + BatchID + ".xlsx");
+                Response.Cache.SetCacheability(HttpCacheability.NoCache);
+                Response.BinaryWrite(content);
+                Response.End();
+                return;
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = ex.Message;
+            }
+        }
+        }
+    
+    protected void SqlDataSource1_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        if (e.AffectedRows > 0)
+            lblStatus.Text = string.Format("Total Cards: <b>{0:N0}</b>", e.AffectedRows);
+        else
+            lblStatus.Text = "";
+    }
+    protected void SqlDataSourceDel_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        if (e.AffectedRows > 0)
+        {
+            lblstatusDel.Text = string.Format("Total Deleted Cards: <b>{0:N0}</b>", e.AffectedRows);
+            lblDelMsg.Text = "Deletem Items";
+            cmdExport.Visible = true;
+        }
+        else
+        {
+            lblstatusDel.Text = "";
+            lblDelMsg.Text = "";
+            cmdExport.Visible = false;
+        }
+    }
+    protected void cmdExport_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            string FileName = Path.GetTempFileName();
+            if (File.Exists(FileName)) File.Delete(FileName);
+            FileInfo FI = new FileInfo(FileName);
+            using (ExcelPackage xlPackage = new ExcelPackage(FI))
+            {
+                ExcelWorksheet worksheet = xlPackage.Workbook.Worksheets.Add("Deleted Items");
+                int StartRow = 1;
+                //Adding Title Row
+                worksheet.Cells[StartRow, 1].Value = "ID";
+                worksheet.Cells[StartRow, 2].Value = "Account No.";
+                worksheet.Cells[StartRow, 3].Value = "Card Number";
+                worksheet.Cells[StartRow, 4].Value = "Name on Card";
+                worksheet.Cells[StartRow, 5].Value = "Insert By";
+                worksheet.Cells[StartRow, 6].Value = "Inserted On";                
+                worksheet.Cells[StartRow, 7].Value = "Upload Batch";
+                worksheet.Cells[StartRow, 8].Value = "Reason";
+
+                worksheet.Column(1).Width = 12;
+                worksheet.Column(2).Width = 18;
+                worksheet.Column(3).Width = 19;
+                worksheet.Column(4).Width = 25;
+                worksheet.Column(5).Width = 10;
+                worksheet.Column(6).Width = 24;                
+                worksheet.Column(7).Width = 14;
+                worksheet.Column(8).Width = 18;                
+
+                worksheet.Cells[1, 2].Style.WrapText = true;
+                worksheet.Cells[1, 5].Style.WrapText = true;                
+
+                DataView DV = (DataView)SqlDataSourceDel.Select(DataSourceSelectArguments.Empty);
+
+                for (int r = 0; r < DV.Table.Rows.Count; r++)
+                {
+                    int R = StartRow + r + 1;
+
+                    if (DV.Table.Rows[r]["ID"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 1].Value = DV.Table.Rows[r]["ID"];                        
+                    }
+
+
+                    if (DV.Table.Rows[r]["Account"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 2].Value = DV.Table.Rows[r]["Account"].ToString();
+                        worksheet.Cells[R, 2].Style.WrapText = false;
+                    }
+
+                    if (DV.Table.Rows[r]["CardNumber"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 3].Value = DV.Table.Rows[r]["CardNumber"];
+                        worksheet.Cells[R, 3].Style.WrapText = false;
+                    }
+
+                    if (DV.Table.Rows[r]["NameOnCard"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 4].Value = DV.Table.Rows[r]["NameOnCard"];
+                        worksheet.Cells[R, 4].Style.WrapText = false;
+                    }
+
+                    if (DV.Table.Rows[r]["InsertBy"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 5].Value = DV.Table.Rows[r]["InsertBy"].ToString();
+                        worksheet.Cells[R, 5].Style.WrapText = false;
+                    }
+
+                    if (DV.Table.Rows[r]["InsertDT"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 6].Value = DV.Table.Rows[r]["InsertDT"].ToString();
+                        worksheet.Cells[R, 6].Style.Numberformat.Format = "dd/MM/yyyy";
+                    }
+
+                    if (DV.Table.Rows[r]["UploadBatch"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 7].Value = DV.Table.Rows[r]["UploadBatch"].ToString();
+
+                    }
+
+                    if (DV.Table.Rows[r]["ReasonDescription"] != DBNull.Value)
+                    {
+                        worksheet.Cells[R, 8].Value = DV.Table.Rows[r]["ReasonDescription"].ToString();
+                        worksheet.Cells[R, 8].Style.WrapText = false;                        
+                    }
+                    
+                }
+                worksheet.Cells["A1:H1"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                worksheet.Cells["A1:A"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                worksheet.Cells["C1:C"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                worksheet.Cells["D1:D"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                worksheet.Cells["E1:E"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;
+                worksheet.Cells["F1:F"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                worksheet.Cells["G1:G"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+                worksheet.Cells["H1:H"].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Left;                
+                worksheet.Cells["A1:H"].Style.VerticalAlignment = OfficeOpenXml.Style.ExcelVerticalAlignment.Top;
+                //
+                worksheet.Cells["A1:H1"].Style.Font.Bold = true;
+
+
+                //Adding Properties
+                xlPackage.Workbook.Properties.Title = "Deleted Item";
+                xlPackage.Workbook.Properties.Author = "Administrator";
+                xlPackage.Workbook.Properties.Company = "Trust Bank Limited";
+                //xlPackage.Workbook.Properties.LastModifiedBy = string.Format("{0}", Session["EMPNAME"]);
+
+                xlPackage.Save();
+            }
+
+
+            //Reading File Content
+            byte[] content = File.ReadAllBytes(FileName);
+            File.Delete(FileName);
+
+            //Downloading File
+            Response.Clear();
+            Response.ClearContent();
+            Response.ClearHeaders();
+            Response.ContentType = "application/xlsx";
+            Response.AddHeader("Content-Disposition", "attachment;filename=" + "Deleted_Items.xlsx");
+            Response.Cache.SetCacheability(HttpCacheability.NoCache);
+            Response.BinaryWrite(content);
+            Response.End();
+        }
+        catch (Exception ex)
+        {
+            lblStatus.Text = ex.Message;
+        }
+    }
+}

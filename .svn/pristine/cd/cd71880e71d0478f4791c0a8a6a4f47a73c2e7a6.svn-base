@@ -1,0 +1,69 @@
+﻿using System;
+using System.IO;
+
+public partial class SMS_New : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        string UploadTempFile;
+
+        TrustControl1.getUserRoles();
+
+        if (!TrustControl1.isRole("ADMIN"))
+        {
+            //if (Session["DEPTID"].ToString() != "7")    //Not IT & Cards
+            {
+                Response.Write("No Permission.<br><br><a href=''>Home</a>");
+                Response.End();
+            }
+        }
+        if (!Directory.Exists(Server.MapPath("Upload")))
+        {
+            Directory.CreateDirectory(Server.MapPath("Upload"));
+        }
+        UploadTempFile = Server.MapPath("Upload/" + Session.SessionID + ".txt");
+
+        if (!IsPostBack)
+        {
+            //Panel2.Visible = false;
+            //Panel3.Visible = false;
+            //CleanDatabase();
+        }
+        Session["SessionID"] = Session.SessionID;
+
+        Title = "Send New SMS";
+    }
+    protected void txtSend_Click(object sender, EventArgs e)
+    {
+        if (txtTo.Text.Trim().Length < 10)
+            TrustControl1.ClientMsg("Please enter correct mobile number.");
+        else if (txtMsg.Text.Trim().Length == 0)
+            TrustControl1.ClientMsg("Please enter SMS body.");
+        else
+        {
+            SqlDataSource1.Select(System.Web.UI.DataSourceSelectArguments.Empty);
+            //txtMsg.Text = "";
+            //txtTo.Text = "+880";
+            TrustControl1.ClientMsg("SMS queued in the system.");
+        }
+    }
+
+    protected void lnkComplex_Click(object sender, EventArgs e)
+    {
+        txtMsg.Text = "This is a test SMS.\n(){}[];:'<>?/\\!@#$%^&*_+=~\"|";
+    }
+    protected void lnkSimple_Click(object sender, EventArgs e)
+    {
+        txtMsg.Text = "This is a test SMS.";
+    }
+
+    protected void lnlAshik_Click(object sender, EventArgs e)
+    {
+        txtTo.Text = "+8801730320272";
+    }
+
+    protected void lnlSadrul_Click(object sender, EventArgs e)
+    {
+        txtTo.Text = "+8801865074123";
+    }
+}

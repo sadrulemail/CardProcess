@@ -1,0 +1,97 @@
+﻿<%--<%@ Page Language="C#" AutoEventWireup="true" CodeFile="ReconciliationFile_Upload.aspx.cs" Inherits="ReconciliationFile_Upload" %>--%>
+
+<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true"
+    CodeFile="ShowCardsReissue.aspx.cs" Inherits="ShowCardsReissue" %>
+
+<%@ Register Src="TrustControl.ascx" TagName="TrustControl" TagPrefix="uc1" %>
+<%@ Register Assembly="AjaxControlToolkit" Namespace="AjaxControlToolkit" TagPrefix="asp" %>
+<%@ Register Src="EMP.ascx" TagName="EMP" TagPrefix="uc2" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+    <style type="text/css">
+        .Border1
+        {
+            background-color: #FFFFB5;
+            padding: 10px;
+            border: solid 1px green;
+            width: 200px;
+        }
+    </style>
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    Card Reissue</asp:Content>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="Server">
+    <uc1:TrustControl ID="TrustControl1" runat="server" />
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <asp:GridView ID="GridView2" runat="server" AllowPaging="True" CssClass="Grid" AllowSorting="True"
+                AutoGenerateColumns="False" BackColor="White" PagerSettings-Position="TopAndBottom"
+                PagerSettings-Mode="NumericFirstLast" BorderColor="#DEDFDE" BorderStyle="Solid"
+                BorderWidth="1px" CellPadding="4" PageSize="20" DataKeyNames="ITCLID" ForeColor="Black"
+                DataSourceID="SqlDataSource1" Style="font-size: small" EnableSortingAndPagingCallbacks="True">
+                <PagerSettings Mode="NumericFirstLast" Position="TopAndBottom" />
+                <RowStyle BackColor="#F7F7DE" HorizontalAlign="Center" />
+                <Columns>
+                    <asp:BoundField DataField="ID" HeaderText="ID" SortExpression="ID" ItemStyle-HorizontalAlign="Center" />
+                    <asp:BoundField DataField="Account" HeaderText="Account" SortExpression="Account"
+                        ItemStyle-HorizontalAlign="Center">
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:BoundField>
+                    <asp:BoundField DataField="CardNumber" HeaderText="Card Number" SortExpression="CardNumber" />
+                    <asp:BoundField DataField="NameOnCard" HeaderText="Name On Card" SortExpression="NameOnCard" />
+                     <asp:BoundField DataField="Card_ReissueFee" HeaderText="Card Reissue Fee" SortExpression="Card_ReissueFee" />
+                    <asp:BoundField DataField="DrawableAmount" HeaderText="Drawable Amount" SortExpression="DrawableAmount" />
+                    <asp:TemplateField HeaderText="Insert By" SortExpression="InsertBy" ItemStyle-HorizontalAlign="Center">
+                        <ItemTemplate>
+                            <uc2:EMP ID="EMP1" runat="server" Username='<%# Eval("InsertBy") %>' />
+                        </ItemTemplate>
+                        <ItemStyle HorizontalAlign="Center" />
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="InsertDT" HeaderText="Insered On" SortExpression="InsertDT" />
+                    <asp:TemplateField HeaderText="About" SortExpression="InsertDT">
+                        <ItemTemplate>
+                            <%# TrustControl1.ToRelativeDate((DateTime)Eval("InsertDT"))%>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Reason" SortExpression="ReasonDescription">
+                        <ItemTemplate>
+                            <span title='<%# Eval("Reason") %>'>
+                                <%# Eval("ReasonDescription") %></span>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Requested Branch" SortExpression="branchname">
+                        <ItemTemplate>
+                            <%# Eval("branchname")%></span>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                </Columns>
+                <FooterStyle BackColor="#CCCC99" />
+                <PagerStyle BackColor="#F7F7DE" ForeColor="Black" HorizontalAlign="Left" CssClass="PagerStyle1" />
+                <SelectedRowStyle BackColor="#CE5D5A" Font-Bold="True" ForeColor="White" />
+                <HeaderStyle BackColor="#6B696B" Font-Bold="True" ForeColor="White" />
+                <AlternatingRowStyle BackColor="White" />
+                <EmptyDataTemplate>
+                    No Record(s) Found.
+                </EmptyDataTemplate>
+            </asp:GridView>
+            <asp:Label ID="lblmsg" runat="server" Text="0" Visible="true"></asp:Label>
+            <asp:SqlDataSource ID="SqlDataSource1" runat="server" ConnectionString="<%$ ConnectionStrings:CardDataConnectionString %>"
+                SelectCommand="s_ShowCardsReissue" SelectCommandType="StoredProcedure" OnSelected="SqlDataSource1_Selected">
+                <SelectParameters>
+                    <asp:QueryStringParameter Name="TypeCode" QueryStringField="cardtype" Type="String" />
+                    <asp:QueryStringParameter Name="Branch" QueryStringField="branch" Type="String" DefaultValue='-1' />
+                </SelectParameters>
+            </asp:SqlDataSource>
+        </ContentTemplate>
+    </asp:UpdatePanel>
+    <asp:UpdateProgress ID="UpdateProgress1" runat="server" DynamicLayout="false" 
+        AssociatedUpdatePanelID="UpdatePanel1" DisplayAfter="10">
+        <ProgressTemplate>
+            <div class="TransparentGrayBackground"></div>
+            <asp:Image ID="Image1" runat="server" alt="" ImageUrl="~/Images/processing.gif" 
+                CssClass="LoadingImage" Width="214" Height="138" />
+        </ProgressTemplate>
+    </asp:UpdateProgress>
+    <asp:AlwaysVisibleControlExtender ID="UpdateProgress1_AlwaysVisibleControlExtender"
+        runat="server" Enabled="True" HorizontalSide="Center" TargetControlID="Image1"
+        UseAnimation="false" VerticalSide="Middle"></asp:AlwaysVisibleControlExtender>
+</asp:Content>

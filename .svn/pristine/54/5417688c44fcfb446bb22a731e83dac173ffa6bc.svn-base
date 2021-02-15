@@ -1,0 +1,438 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Text;
+using System.Data.SqlClient;
+
+public partial class Reissue_Export : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();
+
+        if (!TrustControl1.isRole("ADMIN"))
+        {
+            if (Session["DEPTID"].ToString() != "7")    //Not IT & Cards
+            {
+                Response.Write("No Permission.<br><br><a href=''>Home</a>");
+                Response.End();
+            }
+        }
+        if (!IsPostBack)
+        {
+            SetDate_Today();
+            RefreshControls();
+        }
+
+        Title = "Card Reissue Data Export";
+    }
+    protected void DropDownList1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        RefreshControls();
+    }
+    private void RefreshControls()
+    {
+        DateTime T = DateTime.Now.Date;
+        DateTime S = T;
+        DateTime E = T;
+
+        if (DropDownList1.SelectedItem.Value == "Custom Range")
+        {
+            DropDownList1.BackColor = System.Drawing.Color.Transparent;
+            TextBox1.Enabled = true;
+            TextBox2.Enabled = true;
+        }
+        else
+        {
+            DropDownList1.BackColor = System.Drawing.Color.Yellow;
+
+            switch (DropDownList1.SelectedItem.Value)
+            {
+                case "Today":
+                    SetDate_Today();
+                    break;
+                case "Yesterday":
+                    S = T.AddDays(-1);
+                    E = T.AddDays(-1);
+                    break;
+                case "This Week":
+                    S = T.AddDays(-int.Parse(T.DayOfWeek.ToString("d")));
+                    E = T;
+                    break;
+                case "Last Week":
+                    S = T.AddDays(-7 - int.Parse(T.DayOfWeek.ToString("d")));
+                    E = S.AddDays(6);
+                    break;
+                case "This Month":
+                    S = T.AddDays(-T.Day + 1);
+                    E = T;
+                    break;
+                case "Last Month":
+                    S = (T.AddDays(-T.Day + 1)).AddMonths(-1);
+                    E = T.AddDays(-T.Day);
+                    break;
+                case "This Year":
+                    S = T.AddDays(-T.DayOfYear + 1);
+                    E = T;
+                    break;
+                case "Show All":
+                    S = new DateTime(1900, 1, 1);
+                    E = S;
+                    break;
+            }
+
+            if (S == new DateTime(1900, 1, 1))
+            {
+                TextBox1.Text = "";
+                TextBox2.Text = "";
+            }
+            else
+            {
+                TextBox1.Text = S.ToString("dd/MM/yyyy");
+                TextBox2.Text = E.ToString("dd/MM/yyyy");
+            }
+
+            RefreshLabel();
+
+            GridView1.DataBind();
+
+            TextBox1.Enabled = false;
+            TextBox2.Enabled = false;
+        }
+    }
+    private void RefreshLabel()
+    {
+
+    }
+    private void SetDate_Today()
+    {
+        TextBox1.Text = DateTime.Now.ToString("dd/MM/yyyy");
+        TextBox2.Text = DateTime.Now.ToString("dd/MM/yyyy");
+    }
+    protected void cmdExport_Click(object sender, EventArgs e)
+    {
+        if (cboCardType.SelectedIndex == 0)
+        {
+            TrustControl1.ClientMsg("Please Select Card Type.");
+            return;
+        }
+        if (lblTotalUnsent.Text == "0")
+        {
+            TrustControl1.ClientMsg("Nothing to Export.");
+            return;
+        }
+        
+
+        SqlDataSourceExport.Select(DataSourceSelectArguments.Empty);
+
+        RefreshExportButton();
+    }
+
+    private static string SortString(string Branches)
+    {
+        int[] i_Branches;
+        List<int> ints = new List<int>();
+        string[] strings = Branches.Split(',');
+
+        foreach (string s in strings)
+        {
+            int i;
+            if (int.TryParse(s.Trim(), out i))
+            {
+                ints.Add(i);
+            }
+        }
+        i_Branches = ints.ToArray();
+
+        Array.Sort(i_Branches);
+
+        Branches = "";
+        foreach (int s in i_Branches)
+            Branches += "," + s.ToString();
+        if (Branches.Length > 1)
+        {
+            Branches = Branches.Substring(1);
+        }
+        return Branches;
+    }
+
+    protected void cboCardType_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        //lblSelectedBrances.Text = "";
+        //GridView3.DataBind();
+        //RefreshExportButton();
+        //chkSelectAllBranch.Checked = false;
+        //lblDownloadLink.Text = "";
+        if (cboCardType.SelectedIndex == 0)
+        {
+            TrustControl1.ClientMsg("Please Select Card Type.");
+            cboCardType.Focus();
+        }
+        else
+        {
+            lblSelectedBrances.Text = "";
+            GridView3.DataBind();
+            RefreshExportButton();
+            chkSelectAllBranch.Checked = false;
+            lblDownloadLink.Text = "";
+        }
+    }
+
+    protected void ddlRequestType_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (cboCardType.SelectedIndex == 0)
+        {
+            TrustControl1.ClientMsg("Please Select Card Type.");
+            cboCardType.Focus();
+        }
+        else
+        {
+            if (ddlRequestType.SelectedIndex == 1)
+                lblMsgType.Text = "Select Account Branches:";
+            else
+                lblMsgType.Text = "Select Requested Branches:";
+            lblSelectedBrances.Text = "";
+            GridView3.DataBind();
+            RefreshExportButton();
+            chkSelectAllBranch.Checked = false;
+            lblDownloadLink.Text = "";
+        }
+    }
+
+    protected void LinkButton1_Click(object sender, EventArgs e)
+    {
+        GridView2.DataBind();
+        //MultiView1.SetActiveView(View1);
+    }
+
+    protected void LinkButton2_Click(object sender, EventArgs e)
+    {
+        if (TrustControl1.isRole("ADMIN"))
+        {
+            RefreshExportButton();
+            //MultiView1.SetActiveView(View2);
+        }
+        else
+        {
+            TrustControl1.ClientMsg("Only Admin can Export Data Files.");
+        }
+    }
+
+    protected void LinkButton3_Click(object sender, EventArgs e)
+    {
+        GridView1.DataBind();
+        //  MultiView1.SetActiveView(View3);
+    }
+
+    protected void chkBranches_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        string Branches = "";
+        if (chkBranches.SelectedItem == null)
+        {
+            lblSelectedBrances.Text = "";
+        }
+        else
+        {
+            for (int i = 0; i < chkBranches.Items.Count; i++)
+            {
+                if (chkBranches.Items[i].Selected)
+                    Branches += "," + chkBranches.Items[i].Value;
+            }
+            if (Branches.Length > 1)
+            {
+                Branches = SortString(Branches.Substring(1));
+                lblSelectedBrances.Text = Branches.Replace(",", ", ");
+            }
+        }
+        RefreshExportButton();
+    }
+
+    protected void RefreshExportButton()
+    {
+        hidCardType.Value = cboCardType.SelectedItem.Value;
+        hidRequestType.Value = ddlRequestType.SelectedItem.Value;
+        string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+        SqlConnection oConn = new SqlConnection(oConnString);
+        if (oConn.State == ConnectionState.Closed)
+            oConn.Open();
+        SqlCommand oCommand = new SqlCommand("EXEC sp_Card_Reissue_Get_Ready '" + cboCardType.SelectedItem.Value + "', '" + lblSelectedBrances.Text + "','" + ddlRequestType.SelectedItem.Value + "'", oConn);
+
+        SqlDataReader oReader = oCommand.ExecuteReader();
+        if (oReader.HasRows)
+        {
+            while (oReader.Read())
+            {
+                lblTotalUnsent.Text = oReader["TotalUnsent"].ToString();
+                lblCardType.Text = cboCardType.SelectedItem.Value;
+            }
+        }
+        cmdExport.Enabled = (int.Parse(lblTotalUnsent.Text) > 0 && lblCardType.Text.Trim() != "" && lblSelectedBrances.Text.Trim() != "" && cboMaxRowsToSent.SelectedItem.Value != "");
+    }
+    protected void GridView3_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        //TrustControl1.ClientMsg(e.CommandSource.ToString());
+
+        if (e.CommandName == "CHECK")
+        {
+            TrustControl1.ClientMsg(e.CommandArgument.ToString());
+        }
+
+        
+    }
+
+    protected void chkBranchSelect_CheckedChanged1(object sender, EventArgs e)
+    {
+        try
+        {
+            string Branches = "";
+            for (int i = 0; i < GridView3.Rows.Count; i++)
+            {
+                CheckBox chk = (CheckBox)(GridView3.Rows[i].FindControl("chkBranchSelect"));
+                if (chk.Checked)
+                {
+                    Branches += "," + chk.Text;
+                }
+            }
+            if (Branches.Length > 1)
+                Branches = Branches.Substring(1);
+            Branches = SortString(Branches);
+            lblSelectedBrances.Text = Branches.Replace(",", ", ");
+        }
+        catch (Exception ex) { TrustControl1.ClientMsg(ex.Message); }
+        RefreshExportButton();
+    }
+    //protected void cmdExportLogPerPage_SelectedIndexChanged(object sender, EventArgs e)
+    //{
+    //    GridView1.PageSize = int.Parse(cmdExportLogPerPage.Text);
+    //}
+    protected void GridView2_DataBound(object sender, EventArgs e)
+    {
+        if (GridView2.Rows.Count > 0)
+        {
+            int Total = 0;
+            int Total1 = 0;
+            for (int i = 0; i < GridView2.Rows.Count; i++)
+            {
+                Total += int.Parse(GridView2.Rows[i].Cells[2].Text);
+                Total1 += int.Parse(GridView2.Rows[i].Cells[3].Text);
+            }
+            GridView2.FooterRow.Cells[2].Text = Total.ToString();
+            GridView2.FooterRow.Cells[3].Text = Total1.ToString();
+
+            //for (int i = 0; i < GridView2.Rows.Count; i++)
+            //{
+            //    Panel p1 = new Panel();
+            //    p1.BackColor = System.Drawing.Color.White;
+            //    p1.BorderColor = System.Drawing.Color.Gray;
+            //    p1.BorderStyle = BorderStyle.Solid;
+            //    p1.BorderWidth = Unit.Pixel(1);
+            //    Panel pn = new Panel();
+            //    double percentage = (100 * double.Parse(GridView2.Rows[i].Cells[2].Text)) / (double)Total;
+            //    pn.Width = Unit.Percentage(percentage);
+            //    GridView2.Rows[i].Cells[3].ToolTip = string.Format("{0:N2}%", percentage);
+            //    pn.BackColor = System.Drawing.Color.Gray;
+            //    pn.Controls.Add(new LiteralControl("&nbsp;"));
+            //    p1.Controls.Add(pn);
+            //    pn.Style.Add("margin", "1px");
+            //    GridView2.Rows[i].Cells[3].Controls.Add(p1);
+            //}
+        }
+    }
+    protected void SqlDataSource4_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        chkSelectAllBranch.Enabled = e.AffectedRows > 0;
+    }
+    protected void chkSelectAllBranch_CheckedChanged(object sender, EventArgs e)
+    {
+        try
+        {
+            string Branches = "";
+            for (int i = 0; i < GridView3.Rows.Count; i++)
+            {
+                CheckBox chk = (CheckBox)(GridView3.Rows[i].FindControl("chkBranchSelect"));
+                chk.Checked = chkSelectAllBranch.Checked;
+                if (chk.Checked)
+                {
+                    Branches += "," + chk.Text;
+                }
+            }
+            if (Branches.Length > 1)
+                Branches = Branches.Substring(1);
+            Branches = SortString(Branches);
+            lblSelectedBrances.Text = Branches.Replace(",", ", ");
+        }
+        catch (Exception ex) { TrustControl1.ClientMsg(ex.Message); }
+        RefreshExportButton();
+    }
+    protected void GridView3_DataBound(object sender, EventArgs e)
+    {
+        chkSelectAllBranch.Enabled = GridView3.Rows.Count > 0;
+    }
+
+    public string AddLinkToBranches(object Branches, object Batch)
+    {
+        string Retval = "";
+        //Retval = string.Format("{0}", Branches);
+        string[] B = Branches.ToString().Split(',');
+        foreach (string s in B)
+            Retval += string.Format("<a href='Data_Export_Download.aspx?batch={1}&branches={0}' class='Link'>{0}</a>, ", s.Trim(), Batch);
+        if (Retval.Trim().EndsWith(","))
+            Retval = Retval.Substring(0, Retval.Length - 2);
+        return Retval;
+    }
+    protected void cboMaxRowsToSent_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        RefreshExportButton();
+    }
+    protected void tabContainer_ActiveTabChanged(object sender, EventArgs e)
+    {
+        if (tabContainer.ActiveTabIndex == 0)
+            GridView2.DataBind();
+        else if (tabContainer.ActiveTabIndex == 1)
+            GridView1.DataBind();
+    }
+    protected void SqlDataSourceExport_Selected(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        e.Command.CommandTimeout = 0;
+        int BatchNo = (int)e.Command.Parameters["@BatchNo"].Value;
+        lblDownloadLink.Text = string.Format("<a href='Card_Reissue_Batch.aspx?batch={0}&type=dbf&RequestType={1}&branches=' class='Link2'>Download Batch # {0}<a>", BatchNo,ddlRequestType.SelectedValue);
+    }
+    protected void SqlDataSourceSearch_Deleted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        GridView4.DataBind();
+    }
+    protected void cmdOpen_Click(object sender, EventArgs e)
+    {
+        GridView4.DataBind();
+    }
+    protected void cmdReissue_DeleteAll_Click(object sender, EventArgs e)
+    {
+        if (DropDownList1.SelectedIndex == 0)
+        {
+            TrustControl1.ClientMsg("Please Select Request Type.");
+            DropDownList1.Focus();
+        }
+        else
+        {
+            string oConnString = System.Configuration.ConfigurationManager.ConnectionStrings["CardDataConnectionString"].ConnectionString;
+            using (SqlConnection oConn = new SqlConnection(oConnString))
+            {
+                if (oConn.State == ConnectionState.Closed)
+                    oConn.Open();
+                using (SqlCommand oCommand = new SqlCommand("sp_Card_Reissue_DeleteAll", oConn))
+                {
+                    oCommand.CommandType = CommandType.StoredProcedure;
+                    oCommand.Parameters.Add("@EmpID", SqlDbType.VarChar, 20).Value = Session["EMPID"].ToString();
+                    oCommand.Parameters.Add("@RequestType", SqlDbType.VarChar, 100).Value = DropDownList1.SelectedItem.Value;
+                    oCommand.ExecuteNonQuery();
+                }
+            }
+
+            TrustControl1.ClientMsg("All Deleted.");
+        }
+    }
+}

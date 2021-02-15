@@ -1,0 +1,38 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class PriorityPassEntry : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        TrustControl1.getUserRoles();        
+
+        Title = "Priority Pass Entry";
+    }
+    protected void SqlDataSource2_Inserted(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(msg);
+        GridView1.DataBind();
+    }
+    protected void SqlDataSource2_Updated(object sender, SqlDataSourceStatusEventArgs e)
+    {
+        string msg = e.Command.Parameters["@Msg"].Value.ToString();
+        TrustControl1.ClientMsg(msg);
+        GridView1.DataBind();
+    }
+    protected void cmdNew_Click(object sender, EventArgs e)
+    {
+        DetailsView1.ChangeMode(DetailsViewMode.Insert);
+    }
+    protected void GridView1_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        DetailsView1.ChangeMode(DetailsViewMode.ReadOnly);
+    }
+
+   
+}
